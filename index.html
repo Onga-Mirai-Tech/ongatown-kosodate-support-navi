@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>遠賀町 子育て支援ナビ</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    /* アニメーションとユーティリティクラス */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* 選択不可にするユーティリティ */
+    .no-select {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 flex flex-col font-sans min-h-screen overflow-hidden">
+
+  <!-- 免責事項ポップアップ -->
+  <div id="disclaimer-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in">
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+        <i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i>
+      </div>
+      <h2 class="text-xl font-bold text-center text-gray-800 mb-4">免責事項<br><span class="text-sm font-normal text-gray-500">（必ずお読みください）</span></h2>
+      <div class="space-y-4 text-sm text-gray-700 mb-6 bg-red-50 p-4 rounded-lg border border-red-100">
+        <p class="flex items-start">
+          <i data-lucide="info" class="h-5 w-5 mr-2 text-red-500 mt-0.5 flex-shrink-0"></i>
+          <span>このアプリケーションは、<strong>あくまで個人開発アプリです。</strong>遠賀町役場が提供・運営している公式のものではありません。</span>
+        </p>
+        <p class="flex items-start">
+          <i data-lucide="info" class="h-5 w-5 mr-2 text-red-500 mt-0.5 flex-shrink-0"></i>
+          <span>制度の変更等があるため、当アプリの情報は目安としてご利用ください。<strong>最新情報は各施設および、遠賀町役場にお問い合わせください。</strong></span>
+        </p>
+      </div>
+      <button onclick="closeDisclaimer()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center">
+        同意して利用を始める
+      </button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="bg-orange-500 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-xl font-bold flex items-center cursor-pointer no-select" onclick="switchTab('home')">
+        <i data-lucide="baby" class="mr-2 h-6 w-6"></i>
+        遠賀町 子育て支援ナビ
+      </h1>
+      <a href="https://www.town.onga.lg.jp/soshiki/41/1429.html" target="_blank" rel="noopener noreferrer" class="text-xs flex items-center bg-orange-600 px-3 py-1.5 rounded-full hover:bg-orange-700 transition no-select">
+        町公式HP <i data-lucide="external-link" class="ml-1 h-3 w-3"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <div class="flex-1 max-w-4xl mx-auto w-full flex flex-col md:flex-row pb-20 md:pb-0 relative">
+    
+    <!-- Desktop Sidebar -->
+    <aside class="hidden md:block w-64 p-6 flex-shrink-0 z-10">
+      <nav class="space-y-2 sticky top-24" id="desktop-nav">
+        <!-- ナビゲーションアイテムはJSでハイライト制御 -->
+        <button onclick="switchTab('home')" data-tab="home" class="nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition hover:bg-gray-200 text-gray-700">
+          <i data-lucide="home" class="mr-3 h-5 w-5"></i> ホーム
+        </button>
+        <button onclick="switchTab('facilities')" data-tab="facilities" class="nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition hover:bg-gray-200 text-gray-700">
+          <i data-lucide="map-pin" class="mr-3 h-5 w-5"></i> 保育施設一覧
+        </button>
+        <button onclick="switchTab('simulator')" data-tab="simulator" class="nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition hover:bg-gray-200 text-gray-700">
+          <i data-lucide="check-square" class="mr-3 h-5 w-5"></i> 認定シミュレーター
+        </button>
+        <button onclick="switchTab('documents')" data-tab="documents" class="nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition hover:bg-gray-200 text-gray-700">
+          <i data-lucide="file-text" class="mr-3 h-5 w-5"></i> 必要書類リスト
+        </button>
+        <button onclick="switchTab('flow')" data-tab="flow" class="nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition hover:bg-gray-200 text-gray-700">
+          <i data-lucide="clock" class="mr-3 h-5 w-5"></i> 入所までの流れ
+        </button>
+        <button onclick="switchTab('services')" data-tab="services" class="nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition hover:bg-gray-200 text-gray-700">
+          <i data-lucide="heart-handshake" class="mr-3 h-5 w-5"></i> その他のサービス
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Content Container -->
+    <main class="flex-1 p-4 md:p-6 md:min-h-[calc(100vh-140px)] z-10" id="main-content">
+      <!-- JSでコンテンツを描画 -->
+    </main>
+  </div>
+
+  <!-- Footer Info Box -->
+  <div class="bg-orange-900 text-orange-50 py-8 px-4 mt-auto z-10 relative">
+    <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <div>
+        <h4 class="font-bold text-lg mb-2 flex items-center"><i data-lucide="phone" class="mr-2 h-5 w-5"></i> 提出・問い合わせ先</h4>
+        <p>遠賀町役場 健康こども課 子育て支援係</p>
+        <p class="text-xl font-bold text-white tracking-wider mt-1">TEL: 093-293-1254</p>
+        <p class="text-sm opacity-80 mt-1">(内線 287, 296)</p>
+        <p class="text-xs text-red-300 font-bold mt-3">※遠賀町役場ではこのアプリについてのサポートは行っていません。</p>
+      </div>
+      <div class="text-center md:text-right text-sm opacity-75">
+        <p class="mb-2 text-xs">※当サイトは町が配布する「保育施設のしおり」等の資料を基に作成された目安です。</p>
+        <p>&copy; 2026 Onga-Mirai-Tech. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-40 pb-safe overflow-x-auto hide-scrollbar">
+    <div class="flex items-center h-16 min-w-max px-2" id="mobile-nav">
+      <!-- モバイルナビゲーションアイテムはJSでハイライト制御 -->
+      <button onclick="switchTab('home')" data-tab="home" class="mobile-nav-btn flex flex-col items-center justify-center w-16 h-full text-gray-500">
+        <i data-lucide="home" class="h-5 w-5"></i>
+        <span class="text-[10px] mt-1 font-medium">ホーム</span>
+      </button>
+      <button onclick="switchTab('facilities')" data-tab="facilities" class="mobile-nav-btn flex flex-col items-center justify-center w-16 h-full text-gray-500">
+        <i data-lucide="map-pin" class="h-5 w-5"></i>
+        <span class="text-[10px] mt-1 font-medium">施設</span>
+      </button>
+      <button onclick="switchTab('simulator')" data-tab="simulator" class="mobile-nav-btn flex flex-col items-center justify-center w-16 h-full text-gray-500">
+        <i data-lucide="check-square" class="h-5 w-5"></i>
+        <span class="text-[10px] mt-1 font-medium">判定</span>
+      </button>
+      <button onclick="switchTab('documents')" data-tab="documents" class="mobile-nav-btn flex flex-col items-center justify-center w-16 h-full text-gray-500">
+        <i data-lucide="file-text" class="h-5 w-5"></i>
+        <span class="text-[10px] mt-1 font-medium">書類</span>
+      </button>
+      <button onclick="switchTab('flow')" data-tab="flow" class="mobile-nav-btn flex flex-col items-center justify-center w-16 h-full text-gray-500">
+        <i data-lucide="clock" class="h-5 w-5"></i>
+        <span class="text-[10px] mt-1 font-medium">流れ</span>
+      </button>
+      <button onclick="switchTab('services')" data-tab="services" class="mobile-nav-btn flex flex-col items-center justify-center w-16 h-full text-gray-500">
+        <i data-lucide="heart-handshake" class="h-5 w-5"></i>
+        <span class="text-[10px] mt-1 font-medium">サービス</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Application Logic -->
+  <script>
+    // --- データ定義 ---
+    const facilities = [
+      { name: '遠賀川保育園', type: '保育園', address: '遠賀川二丁目6番22号', capacity: '140名', age: '生後3ヶ月〜', time: '7:00〜18:00 (延長19:00)', phone: '093-293-0184', url: 'https://www.ongagawa-hoikuen.com/' },
+      { name: '南部保育園', type: '保育園', address: '浅木二丁目19番27号', capacity: '160名', age: '生後3ヶ月〜', time: '7:00〜18:00 (延長19:00)', phone: '093-293-2256', url: 'https://www.ans.co.jp/n/nanbuhoikuen/' },
+      { name: '山びこ保育園', type: '保育園', address: '島門1番13号', capacity: '140名', age: '生後6ヶ月〜', time: '7:00〜18:00 (延長19:00)', phone: '093-293-2227', url: 'https://yamabiko-onga.com/' },
+      { name: '遠賀中央幼稚園', type: '幼稚園型認定こども園', address: '島門3番1号', capacity: '170名', age: '1歳児〜(保育)/2歳児〜(教育)', time: '7:30〜18:30(保育)/10:00〜14:00(教育)', phone: '093-293-0097', url: 'https://www.ongachuou.com/' },
+      { name: '愛あい保育園', type: '事業所内保育所', address: '木守1185番地 (健愛記念病院内)', capacity: '19名', age: '生後8ヶ月〜2歳児', time: '7:30〜18:30 (延長なし)', phone: '093-293-1915', url: 'https://www.kenai.or.jp/facilities/aiai.html' },
+      { name: 'モクセイ保育園', type: '企業主導型保育施設', address: '若松438番地の1', capacity: '31名', age: '生後5ヶ月〜', time: '7:00〜20:00 (365日開園)', phone: '093-482-8620', url: 'https://www.instagram.com/mokuseihoikuen/' },
+    ];
+
+    const documentsData = [
+      { 
+        category: '必ず全員必要なもの', 
+        note: '※認定区分に関係なく、入所申し込みをする全員が提出必要な書類です。',
+        items: [
+          { id: 'req1', label: '教育・保育給付認定申請書 兼 保育施設等利用申込書', desc: '児童1人につき1枚必要です。' }
+        ] 
+      },
+      { 
+        category: 'その他 該当する場合に必要なもの', 
+        items: [
+          { id: 'opt1', label: '税の申告書の写し等', desc: '父または母が税の申告をしていない場合 (保育料決定のため)' },
+          { id: 'opt2', label: '口座振替依頼書', desc: '新規で入所申込する方で、私立保育園を利用する場合（※遠賀中央幼稚園希望の場合は不要）' },
+          { id: 'opt3', label: '在園(在所)証明書', desc: '町外の保育施設を利用している兄弟がいる場合' },
+          { id: 'opt4', label: '状況を証明できる資料', desc: '遠賀町外に住民票のある18歳未満の兄姉がいる場合' }
+        ] 
+      }
+    ];
+
+    const reasonDocs = {
+      '会社等勤務者': '勤務先が記入した就労証明書',
+      '会社等勤務予定者': '勤務予定先が記入した就労証明書',
+      '自営業': '就労証明書と税の申告書の写し等',
+      '内職等': '就労証明書と委託者もしくは発注者の証明',
+      '病気等': '本人の申告及び診断書もしくは各種手帳等',
+      '介護等': '本人の申告及び看護される者の各種手帳、診断書もしくは認定証等',
+      '産前・産後': '本人の申告及び母子健康手帳等',
+      '就学': '本人の申告及び学生証もしくは在学証明書',
+      '求職活動': '本人の申告及び求職の申立書 ※年度内に1回のみ'
+    };
+    const statusOptions = ['', ...Object.keys(reasonDocs)];
+
+    // --- 免責事項ポップアップ制御 ---
+    function closeDisclaimer() {
+      const modal = document.getElementById('disclaimer-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        // ポップアップが閉じたら背面のスクロールを許可
+        document.body.classList.remove('overflow-hidden');
+      }
+    }
+
+    // --- 状態管理 ---
+    let state = {
+      activeTab: 'home',
+      docs: {
+        checkedItems: {},
+        familyType: 'two', // 'two' または 'single'
+        parent1Status: '', // 父親 または ひとり親の状況
+        parent2Status: ''  // 母親の状況
+      },
+      simulator: {
+        step: 1,
+        answers: {}
+      },
+      flow: {
+        type: 'hoiku'
+      }
+    };
+
+    // --- コア機能 ---
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      renderApp();
+      window.scrollTo(0, 0); // タブ切り替え時にトップへスクロール
+    }
+
+    function renderApp() {
+      // 1. Navigation Button Styles Update
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.dataset.tab === state.activeTab) {
+          btn.className = "nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition bg-orange-100 text-orange-800 font-bold";
+        } else {
+          btn.className = "nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition hover:bg-gray-200 text-gray-700";
+        }
+      });
+
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        if (btn.dataset.tab === state.activeTab) {
+          btn.className = "mobile-nav-btn flex flex-col items-center justify-center w-16 h-full text-orange-600";
+        } else {
+          btn.className = "mobile-nav-btn flex flex-col items-center justify-center w-16 h-full text-gray-500";
+        }
+      });
+
+      // 2. Render Main Content
+      const contentDiv = document.getElementById('main-content');
+      switch (state.activeTab) {
+        case 'home': contentDiv.innerHTML = getHomeHTML(); break;
+        case 'facilities': contentDiv.innerHTML = getFacilityHTML(); break;
+        case 'documents': contentDiv.innerHTML = getDocumentHTML(); break;
+        case 'simulator': contentDiv.innerHTML = getSimulatorHTML(); break;
+        case 'flow': contentDiv.innerHTML = getFlowHTML(); break;
+        case 'services': contentDiv.innerHTML = getServicesHTML(); break;
+        default: contentDiv.innerHTML = getHomeHTML();
+      }
+
+      // 3. Re-initialize Lucide Icons
+      lucide.createIcons();
+    }
+
+    // --- 年齢クラス計算 ---
+    window.calculateAgeClass = function() {
+      const dateStr = document.getElementById('childBirthDate').value;
+      const resultDiv = document.getElementById('ageClassResult');
+      if (!dateStr) {
+        resultDiv.innerHTML = `<div class="p-4 bg-gray-50 rounded-lg border border-gray-100 text-center h-full flex items-center justify-center"><span class="text-sm text-gray-400">生年月日を選択すると、<br/>0歳児から中学校入学までの<br/>スケジュール早見表が表示されます</span></div>`;
+        return;
+      }
+      
+      const birthDate = new Date(dateStr);
+      
+      // 生まれ年度(コホート)を計算 (4/2〜翌4/1)
+      // ※実行時の現在の日付(今年)には一切依存しないため、来年以降も常に正確に機能します。
+      let cohortYear = birthDate.getFullYear();
+      if (birthDate.getMonth() < 3 || (birthDate.getMonth() === 3 && birthDate.getDate() === 1)) {
+        cohortYear--;
+      }
+      
+      // 遠賀町の年度基準によるスケジュール配列
+      const schedule = [
+        { label: '0歳児', desc: '年度中に1歳になる', year: cohortYear + 1 },
+        { label: '1歳児', desc: '年度中に2歳になる', year: cohortYear + 2 },
+        { label: '2歳児（満3歳児含む）', desc: '年度中に3歳になる', year: cohortYear + 3 },
+        { label: '3歳児（年少）', desc: '年度中に4歳になる', year: cohortYear + 4 },
+        { label: '4歳児（年中）', desc: '年度中に5歳になる', year: cohortYear + 5 },
+        { label: '5歳児（年長）', desc: '年度中に6歳になる', year: cohortYear + 6 },
+        { label: '小学校入学', desc: '新小学1年生', year: cohortYear + 7 },
+        { label: '中学校入学', desc: '新中学1年生', year: cohortYear + 13 }
+      ];
+      
+      let tableRows = schedule.map(item => `
+        <tr class="hover:bg-orange-50/50 transition-colors">
+          <td class="px-3 py-2.5 font-medium text-gray-800 border-r border-gray-100">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <span>${item.label}</span>
+              ${item.desc.includes('年度中') ? `<span class="text-[10px] text-gray-500 font-normal">${item.desc}</span>` : ''}
+            </div>
+          </td>
+          <td class="px-3 py-2.5 text-center font-bold text-orange-600 bg-orange-50/30 w-32">
+            ${item.year}年度
+          </td>
+        </tr>
+      `).join('');
+
+      resultDiv.innerHTML = `
+        <div class="overflow-hidden rounded-xl border border-gray-200 shadow-sm animate-fade-in bg-white">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-gray-100 text-gray-700">
+              <tr>
+                <th class="px-3 py-2 font-bold border-b border-gray-200 border-r border-gray-100">学年・クラス</th>
+                <th class="px-3 py-2 font-bold border-b border-gray-200 text-center w-32">該当年度(4月〜)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              ${tableRows}
+            </tbody>
+          </table>
+        </div>
+      `;
+    };
+
+    // --- ビュー生成関数群 ---
+
+    function getHomeHTML() {
+      return `
+        <div class="space-y-6 animate-fade-in">
+          <div class="bg-orange-50 p-6 rounded-xl border border-orange-200">
+            <h2 class="text-2xl font-bold text-orange-800 mb-4 flex items-center">
+              <i data-lucide="baby" class="mr-2 h-7 w-7"></i>
+              遠賀町 子育て支援ナビへようこそ
+            </h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+              このアプリは、遠賀町の保育施設への入所手続きや、教育・保育給付認定についてわかりやすく案内するサポートツールです。
+            </p>
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-red-100 mb-4">
+              <div class="flex items-start">
+                <i data-lucide="alert-triangle" class="text-red-500 mr-3 h-5 w-5 flex-shrink-0 mt-0.5"></i>
+                <p class="text-sm text-gray-800 font-medium">
+                  <strong>【重要】このアプリケーションは遠賀町非公式アプリです。</strong><br />
+                  このアプリの情報はあくまで目安です。<br />
+                  最終的な判断や詳細な手続きについては、必ず遠賀町役場にご確認ください。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- クラス判定計算機 -->
+          <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+              <i data-lucide="calculator" class="mr-2 h-5 w-5 text-orange-500"></i> お子様の学年（クラス）早見表
+            </h3>
+            <div class="flex flex-col md:flex-row gap-6 items-start">
+              <div class="w-full md:w-1/3 sticky top-20">
+                <label class="block text-xs text-gray-600 mb-1 font-bold">生年月日を入力してください</label>
+                <input type="date" id="childBirthDate" onchange="calculateAgeClass()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition">
+                <p class="text-[10px] text-gray-500 mt-2">※お子様の生年月日から、0歳児〜中学校入学までの該当年度を自動計算します。</p>
+              </div>
+              <div id="ageClassResult" class="w-full md:w-2/3 min-h-[100px]">
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-100 text-center h-full flex items-center justify-center">
+                  <span class="text-sm text-gray-400">生年月日を選択すると、<br/>0歳児から中学校入学までの<br/>スケジュール早見表が表示されます</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button onclick="switchTab('facilities')" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow text-left">
+              <div class="bg-blue-100 p-3 rounded-full mr-4 text-blue-600"><i data-lucide="map-pin"></i></div>
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">町内の保育施設</h3>
+                <p class="text-sm text-gray-500 mt-1">各保育園・こども園の概要と連絡先</p>
+              </div>
+            </button>
+            <button onclick="switchTab('simulator')" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow text-left">
+              <div class="bg-green-100 p-3 rounded-full mr-4 text-green-600"><i data-lucide="check-square"></i></div>
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">給付認定の簡易判定</h3>
+                <p class="text-sm text-gray-500 mt-1">お子様の年齢や状況から認定区分をチェック</p>
+              </div>
+            </button>
+            <button onclick="switchTab('documents')" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow text-left">
+              <div class="bg-purple-100 p-3 rounded-full mr-4 text-purple-600"><i data-lucide="file-text"></i></div>
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">必要書類リスト</h3>
+                <p class="text-sm text-gray-500 mt-1">入所申し込みに必要な書類を確認</p>
+              </div>
+            </button>
+            <button onclick="switchTab('flow')" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow text-left">
+              <div class="bg-orange-100 p-3 rounded-full mr-4 text-orange-600"><i data-lucide="clock"></i></div>
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">入所までの流れ</h3>
+                <p class="text-sm text-gray-500 mt-1">申し込みから入所決定までのスケジュール</p>
+              </div>
+            </button>
+            <button onclick="switchTab('services')" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow text-left md:col-span-2">
+              <div class="bg-pink-100 p-3 rounded-full mr-4 text-pink-600"><i data-lucide="heart-handshake"></i></div>
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">その他の支援・サービス</h3>
+                <p class="text-sm text-gray-500 mt-1">一時預かりや、こども誰でも通園制度について</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function getFacilityHTML() {
+      let cardsHTML = facilities.map((f, i) => `
+        <div class="bg-white border border-gray-200 p-5 rounded-xl shadow-sm flex flex-col">
+          <div class="flex justify-between items-start mb-3">
+            <h3 class="text-xl font-bold text-orange-700">${f.name}</h3>
+            <span class="text-xs font-semibold px-2 py-1 bg-orange-100 text-orange-800 rounded-full">${f.type}</span>
+          </div>
+          <div class="space-y-2 text-sm text-gray-700 flex-grow">
+            <a href="https://maps.google.com/?q=${encodeURIComponent('福岡県遠賀郡遠賀町' + f.address)}" target="_blank" rel="noopener noreferrer" class="flex items-center text-blue-600 hover:underline hover:text-blue-800 transition p-1 -ml-1 rounded w-fit">
+              <i data-lucide="map-pin" class="h-4 w-4 mr-2 flex-shrink-0"></i> ${f.address}
+            </a>
+            <p class="flex"><i data-lucide="baby" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> 受入年齢: ${f.age} / 定員: ${f.capacity}</p>
+            <p class="flex"><i data-lucide="clock" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> ${f.time}</p>
+            <p class="flex"><i data-lucide="phone" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> ${f.phone}</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-100">
+             <a href="${f.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-medium text-orange-600 hover:text-orange-800 transition">
+               <i data-lucide="globe" class="h-4 w-4 mr-1"></i> ${f.url.includes('instagram.com') ? '公式Instagramを見る' : '公式サイトを見る'}
+             </a>
+          </div>
+        </div>
+      `).join('');
+
+      return `
+        <div class="space-y-6 animate-fade-in">
+          <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-orange-400 pb-2">遠賀町内の保育施設</h2>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            ${cardsHTML}
+          </div>
+        </div>
+      `;
+    }
+
+    // Document Functions
+    function toggleDocCheck(id) {
+      state.docs.checkedItems[id] = !state.docs.checkedItems[id];
+      renderApp();
+    }
+    
+    function updateFamilyType(type) {
+      state.docs.familyType = type;
+      renderApp();
+    }
+
+    function updateParentStatus(parent, value) {
+      if (parent === 'parent1') state.docs.parent1Status = value;
+      if (parent === 'parent2') state.docs.parent2Status = value;
+      renderApp();
+    }
+
+    function getDocumentHTML() {
+      const getCheckSvg = (isChecked) => isChecked ? `<svg class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>` : '';
+      
+      const renderItems = (items) => items.map(item => {
+        const isChecked = !!state.docs.checkedItems[item.id];
+        return `
+          <div 
+            class="p-4 flex items-start cursor-pointer transition-colors ${isChecked ? 'bg-orange-50/50' : 'hover:bg-gray-50'}"
+            onclick="toggleDocCheck('${item.id}')"
+          >
+            <div class="mt-0.5 mr-3 flex-shrink-0 h-5 w-5 rounded border flex items-center justify-center ${isChecked ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}">
+              ${getCheckSvg(isChecked)}
+            </div>
+            <div>
+              <p class="font-medium ${isChecked ? 'text-gray-800 line-through decoration-gray-400' : 'text-gray-800'}">${item.label}</p>
+              <p class="text-sm text-gray-500 mt-1">${item.desc}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const renderStatusOptions = (currentVal) => statusOptions.map(opt => 
+        `<option value="${opt}" ${currentVal === opt ? 'selected' : ''}>${opt || '選択してください'}</option>`
+      ).join('');
+
+      return `
+        <div class="space-y-6 animate-fade-in">
+          <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-orange-400 pb-2">入所に必要な書類チェック</h2>
+          <p class="text-sm text-gray-600 mb-4">状況に合わせて必要な書類を確認してください。タップでチェックマークを付けられます。</p>
+          
+          <div class="space-y-6">
+            <!-- 全員必要なもの -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div class="bg-orange-50 px-4 py-3 border-b border-gray-200">
+                <h3 class="font-bold text-gray-800">${documentsData[0].category}</h3>
+                <p class="text-xs font-bold text-red-600 mt-1">${documentsData[0].note}</p>
+              </div>
+              <div class="divide-y divide-gray-100">
+                ${renderItems(documentsData[0].items)}
+              </div>
+            </div>
+
+            <!-- 保育を必要とする理由 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div class="bg-orange-50 px-4 py-3 border-b border-gray-200">
+                <h3 class="font-bold text-gray-800">保育を必要とする理由を証明するもの</h3>
+                <p class="text-xs text-orange-600 mt-1">※原則、父母どちらも提出が必要です。（幼稚園等希望の場合は不要）</p>
+              </div>
+              <div class="p-4 space-y-4">
+                
+                <!-- 世帯タイプの選択 -->
+                <div class="flex bg-gray-100 p-1 rounded-lg w-full md:w-fit mb-2">
+                  <button 
+                    onclick="updateFamilyType('two')" 
+                    class="flex-1 md:px-6 py-2 text-sm font-bold rounded-md transition ${state.docs.familyType === 'two' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:bg-gray-300'}"
+                  >
+                    ふたり親世帯
+                  </button>
+                  <button 
+                    onclick="updateFamilyType('single')" 
+                    class="flex-1 md:px-6 py-2 text-sm font-bold rounded-md transition ${state.docs.familyType === 'single' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:bg-gray-300'}"
+                  >
+                    ひとり親世帯
+                  </button>
+                </div>
+
+                ${state.docs.familyType === 'two' ? `
+                  <!-- 父親 -->
+                  <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <label class="block text-sm font-bold text-blue-800 mb-2">父親の状況</label>
+                    <select 
+                      onchange="updateParentStatus('parent1', this.value)"
+                      class="w-full p-2 border border-gray-300 rounded bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    >
+                      ${renderStatusOptions(state.docs.parent1Status)}
+                    </select>
+                    ${state.docs.parent1Status ? `
+                      <div class="mt-3 p-3 bg-white rounded border border-blue-200 flex items-start animate-fade-in">
+                        <i data-lucide="file-text" class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0"></i>
+                        <div>
+                          <span class="text-xs font-bold text-gray-500 block mb-1">必要な書類:</span>
+                          <span class="text-sm font-medium text-gray-800">${reasonDocs[state.docs.parent1Status]}</span>
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  <!-- 母親 -->
+                  <div class="bg-pink-50 p-4 rounded-lg border border-pink-100">
+                    <label class="block text-sm font-bold text-pink-800 mb-2">母親の状況</label>
+                    <select 
+                      onchange="updateParentStatus('parent2', this.value)"
+                      class="w-full p-2 border border-gray-300 rounded bg-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
+                    >
+                      ${renderStatusOptions(state.docs.parent2Status)}
+                    </select>
+                    ${state.docs.parent2Status ? `
+                      <div class="mt-3 p-3 bg-white rounded border border-pink-200 flex items-start animate-fade-in">
+                        <i data-lucide="file-text" class="h-5 w-5 text-pink-500 mr-2 flex-shrink-0"></i>
+                        <div>
+                          <span class="text-xs font-bold text-gray-500 block mb-1">必要な書類:</span>
+                          <span class="text-sm font-medium text-gray-800">${reasonDocs[state.docs.parent2Status]}</span>
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
+                ` : `
+                  <!-- ひとり親 -->
+                  <div class="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                    <label class="block text-sm font-bold text-purple-800 mb-2">保護者の状況</label>
+                    <select 
+                      onchange="updateParentStatus('parent1', this.value)"
+                      class="w-full p-2 border border-gray-300 rounded bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    >
+                      ${renderStatusOptions(state.docs.parent1Status)}
+                    </select>
+                    ${state.docs.parent1Status ? `
+                      <div class="mt-3 p-3 bg-white rounded border border-purple-200 flex items-start animate-fade-in">
+                        <i data-lucide="file-text" class="h-5 w-5 text-purple-500 mr-2 flex-shrink-0"></i>
+                        <div>
+                          <span class="text-xs font-bold text-gray-500 block mb-1">必要な書類:</span>
+                          <span class="text-sm font-medium text-gray-800">${reasonDocs[state.docs.parent1Status]}</span>
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
+                  <div class="flex items-start text-sm text-gray-800 font-medium bg-white p-3 rounded border border-purple-100 mt-2">
+                    <i data-lucide="info" class="h-5 w-5 mr-2 text-purple-600 mt-0.5 flex-shrink-0"></i>
+                    <p class="text-xs">
+                      ※ひとり親世帯の場合は、上記に加えて戸籍謄本や児童扶養手当受給者証など、ひとり親であることを証明する書類が別途必要になる場合があります。
+                    </p>
+                  </div>
+                `}
+              </div>
+            </div>
+
+            <!-- その他 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div class="bg-orange-50 px-4 py-3 border-b border-gray-200">
+                <h3 class="font-bold text-gray-800">${documentsData[1].category}</h3>
+              </div>
+              <div class="divide-y divide-gray-100">
+                ${renderItems(documentsData[1].items)}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Simulator Functions
+    function handleSimAnswer(key, value, nextStep) {
+      state.simulator.answers[key] = value;
+      state.simulator.step = nextStep;
+      renderApp();
+    }
+    
+    function resetSimulator() {
+      state.simulator.step = 1;
+      state.simulator.answers = {};
+      renderApp();
+    }
+
+    function getSimResultHTML() {
+      const { type, need, age, tax } = state.simulator.answers;
+      
+      if (type === 'kindergarten') {
+         return `
+           <div class="bg-white border-2 border-orange-200 p-6 rounded-xl shadow-sm text-center">
+             <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold mb-3">判定結果</span>
+             <h3 class="text-3xl font-black text-gray-800 mb-4">1号認定</h3>
+             <p class="text-gray-700">幼稚園や認定こども園（教育枠）の利用が可能です。</p>
+             <div class="mt-6 p-4 bg-green-50 rounded-lg text-left">
+               <h4 class="font-bold text-green-800 flex items-center mb-2"><i data-lucide="check-square" class="h-4 w-4 mr-2"></i> 幼児教育・保育の無償化について</h4>
+               <p class="text-sm text-gray-700">満3歳になった翌月から認定可能。幼児教育無償化の対象（ただし、給食費などの実費は発生します※各施設によって異なります）です。</p>
+             </div>
+           </div>
+         `;
+      }
+      
+      if (type === 'nursery' && need === 'no') {
+         return `
+           <div class="bg-white border-2 border-gray-200 p-6 rounded-xl shadow-sm text-center">
+             <i data-lucide="alert-triangle" class="h-12 w-12 text-yellow-500 mx-auto mb-3"></i>
+             <h3 class="text-xl font-bold text-gray-800 mb-4">保育園の利用基準を満たしていません</h3>
+             <p class="text-gray-700 text-left">
+               保育園や認定こども園（保育枠）を利用するには、就労や病気など「保育を必要とする事由」が必要です。<br/>
+               幼稚園や認定こども園（教育枠）の利用、または一時預かり事業の利用をご検討ください。
+             </p>
+           </div>
+         `;
+      }
+
+      if (type === 'nursery' && need === 'yes') {
+         if (age === 'over3') {
+           return `
+            <div class="bg-white border-2 border-orange-200 p-6 rounded-xl shadow-sm text-center">
+              <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold mb-3">判定結果</span>
+              <h3 class="text-3xl font-black text-gray-800 mb-4">2号認定</h3>
+              <p class="text-gray-700">保育園や認定こども園（保育枠）の利用が可能です。</p>
+              <div class="mt-6 p-4 bg-green-50 rounded-lg text-left">
+                <h4 class="font-bold text-green-800 flex items-center mb-2"><i data-lucide="check-square" class="h-4 w-4 mr-2"></i> 幼児教育・保育の無償化について</h4>
+                <ul class="text-sm text-gray-700 space-y-2 list-disc list-outside ml-4">
+                  <li><strong>2歳児クラスの2号認定については、</strong>行政の定めた保育料が発生します。</li>
+                  <li><strong>3歳児クラス以上の2号認定については、</strong>幼児教育無償化の対象です。（ただし、給食費等の実費は発生します ※各施設によって内容は異なります）</li>
+                </ul>
+              </div>
+            </div>
+           `;
+         } else if (age === 'under2') {
+           if (tax === 'yes') {
+              return `
+                <div class="bg-white border-2 border-orange-200 p-6 rounded-xl shadow-sm text-center">
+                  <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold mb-3">判定結果</span>
+                  <h3 class="text-3xl font-black text-gray-800 mb-4">3号認定</h3>
+                  <p class="text-gray-700">保育園や認定こども園（保育枠）、事業所内保育所等の利用が可能です。</p>
+                  <div class="mt-6 p-4 bg-green-50 rounded-lg text-left">
+                    <h4 class="font-bold text-green-800 flex items-center mb-2"><i data-lucide="check-square" class="h-4 w-4 mr-2"></i> 幼児教育・保育の無償化について</h4>
+                    <p class="text-sm text-gray-700">住民税非課税世帯のため、無償化の対象（新3号認定）となります。</p>
+                  </div>
+                </div>
+             `;
+           } else {
+              return `
+                <div class="bg-white border-2 border-orange-200 p-6 rounded-xl shadow-sm text-center">
+                  <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold mb-3">判定結果</span>
+                  <h3 class="text-3xl font-black text-gray-800 mb-4">3号認定</h3>
+                  <p class="text-gray-700 mb-4">保育園や認定こども園（保育枠）、事業所内保育所等の利用が可能です。</p>
+                  <div class="mt-6 p-4 bg-gray-50 rounded-lg text-left border border-gray-200">
+                    <h4 class="font-bold text-gray-800 flex items-center mb-2"><i data-lucide="info" class="h-4 w-4 mr-2"></i> 保育料について</h4>
+                    <p class="text-sm text-gray-700">無償化の対象外です。保護者の所得（住民税額）に応じた保育料が発生します。</p>
+                    <p class="text-xs text-gray-600 mt-2 p-2 bg-yellow-50 rounded">
+                      ★令和6年9月より、遠賀町独自に多子世帯等の保育料軽減が拡大されています。詳しくは基準額表をご確認ください。
+                    </p>
+                  </div>
+                </div>
+             `;
+           }
+         }
+      }
+      return '';
+    }
+
+    function getSimulatorHTML() {
+      let content = '';
+      const step = state.simulator.step;
+
+      if (step === 1) {
+        content = `
+          <div class="animate-fade-in">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Q1. 希望する施設はどちらですか？</h3>
+            <div class="space-y-3">
+              <button onclick="handleSimAnswer('type', 'kindergarten', 5)" class="w-full p-4 text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+                <span>幼稚園・認定こども園（教育枠）</span><i data-lucide="chevron-right" class="text-gray-400"></i>
+              </button>
+              <button onclick="handleSimAnswer('type', 'nursery', 2)" class="w-full p-4 text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+                <span>保育園・認定こども園（保育枠）等</span><i data-lucide="chevron-right" class="text-gray-400"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (step === 2) {
+        content = `
+          <div class="animate-fade-in">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Q2. 保育を必要とする事由がありますか？</h3>
+            <p class="text-xs text-gray-500 mb-4">※月60時間以上の就労、病気、介護、求職活動、妊娠・出産などが該当します。</p>
+            <div class="space-y-3">
+              <button onclick="handleSimAnswer('need', 'yes', 3)" class="w-full p-4 text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+                <span>はい（該当する）</span><i data-lucide="chevron-right" class="text-gray-400"></i>
+              </button>
+              <button onclick="handleSimAnswer('need', 'no', 5)" class="w-full p-4 text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+                <span>いいえ（該当しない）</span><i data-lucide="chevron-right" class="text-gray-400"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (step === 3) {
+        content = `
+          <div class="animate-fade-in">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Q3. 4月1日時点での、お子様の年齢は？</h3>
+            <p class="text-xs text-gray-500 mb-4">※年度途中で誕生日を迎えても、その年度中はクラス年齢は変わりません。</p>
+            <div class="space-y-3">
+              <button onclick="handleSimAnswer('age', 'over3', 5)" class="w-full p-4 text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+                <span>3歳以上（3〜5歳児クラス）</span><i data-lucide="chevron-right" class="text-gray-400"></i>
+              </button>
+              <button onclick="handleSimAnswer('age', 'under2', 4)" class="w-full p-4 text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+                <span>2歳以下（0〜2歳児クラス）</span><i data-lucide="chevron-right" class="text-gray-400"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (step === 4) {
+        content = `
+          <div class="animate-fade-in">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Q4. 世帯全員が住民税非課税ですか？</h3>
+            <div class="space-y-3">
+              <button onclick="handleSimAnswer('tax', 'yes', 5)" class="w-full p-4 text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+                <span>はい（非課税世帯）</span><i data-lucide="chevron-right" class="text-gray-400"></i>
+              </button>
+              <button onclick="handleSimAnswer('tax', 'no', 5)" class="w-full p-4 text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+                <span>いいえ（課税世帯・わからない）</span><i data-lucide="chevron-right" class="text-gray-400"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (step === 5) {
+        content = `
+          <div class="animate-fade-in">
+            ${getSimResultHTML()}
+            <div class="mt-6 text-center">
+              <button onclick="resetSimulator()" class="text-orange-600 font-medium hover:underline">
+                もう一度最初から判定する
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="space-y-6 animate-fade-in">
+          <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-orange-400 pb-2">給付認定シミュレーター</h2>
+          <p class="text-sm text-gray-600">いくつか質問に答えるだけで、認定区分と無償化の対象かどうかの目安がわかります。</p>
+          
+          <div class="bg-red-50 border-l-4 border-red-500 p-3 mb-4 rounded-r-lg">
+            <p class="text-red-700 text-sm font-bold flex items-start">
+              <i data-lucide="alert-triangle" class="h-4 w-4 mr-1.5 mt-0.5 flex-shrink-0"></i>
+              前提条件：保育枠（保育園等）の利用は、遠賀町在住（住民票が遠賀町にある方）のみが対象です。
+            </p>
+          </div>
+
+          <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+            ${content}
+          </div>
+        </div>
+      `;
+    }
+
+    // Flow Functions
+    function setFlowType(type) {
+      state.flow.type = type;
+      renderApp();
+    }
+
+    function getFlowHTML() {
+      const type = state.flow.type;
+      
+      const hoikuContent = `
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-fade-in">
+          <h3 class="text-lg font-bold text-orange-800 mb-6 flex items-center">
+            <i data-lucide="calendar" class="mr-2 h-5 w-5"></i> 4月入所の場合のスケジュール目安
+          </h3>
+          
+          <div class="relative border-l-2 border-orange-200 ml-3 md:ml-6 space-y-8">
+            <div class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-orange-500 border-2 border-white"></div>
+              <div class="text-sm font-bold text-orange-600 mb-1">前年 12月1日 〜 12月28日頃</div>
+              <h4 class="font-bold text-gray-800 mb-1">入所申込書の提出</h4>
+              <p class="text-sm text-gray-600">必要な書類を揃えて、遠賀町役場（健康こども課）へ提出します。<br/>※就労証明書等の添付書類は11月以降の日付のものが必要です。</p>
+            </div>
+            
+            <div class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-orange-300 border-2 border-white"></div>
+              <div class="text-sm font-bold text-orange-600 mb-1">1月上旬 〜</div>
+              <h4 class="font-bold text-gray-800 mb-1">入所審査・利用調整</h4>
+              <p class="text-sm text-gray-600">町が保育の必要性などをもとに優先順位を判定し、調整を行います。</p>
+            </div>
+
+            <div class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-orange-300 border-2 border-white"></div>
+              <div class="text-sm font-bold text-orange-600 mb-1">1月下旬 〜 2月上旬</div>
+              <h4 class="font-bold text-gray-800 mb-1">結果通知の発送</h4>
+              <p class="text-sm text-gray-600">「入所決定」「内定」「保留」の通知が自宅に届きます。</p>
+            </div>
+
+            <div class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-orange-300 border-2 border-white"></div>
+              <div class="text-sm font-bold text-orange-600 mb-1">通知到着後</div>
+              <h4 class="font-bold text-gray-800 mb-1">施設との面談・健康診断</h4>
+              <p class="text-sm text-gray-600">入所決定となった場合、各施設に連絡し、事前の面談や健康診断を受けます。</p>
+            </div>
+
+            <div class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-orange-500 border-2 border-white"></div>
+              <div class="text-sm font-bold text-orange-600 mb-1">4月1日 〜</div>
+              <h4 class="font-bold text-gray-800 mb-1">入所（慣らし保育開始）</h4>
+              <p class="text-sm text-gray-600">新しい環境での生活がスタートします！</p>
+            </div>
+          </div>
+          
+          <div class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 class="font-bold text-gray-800 mb-2">💡 年度途中（8月など）の入所希望の場合</h4>
+            <p class="text-sm text-gray-700 leading-relaxed">
+              入所希望月の<strong>前月の10日</strong>が申込締切となります。<br/>
+              （例：8月入所希望の場合、7月10日締切。就労証明書は3ヶ月前(5月)以降の日付が必要）
+            </p>
+          </div>
+        </div>
+      `;
+
+      const kyouikuContent = `
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-fade-in">
+          <h3 class="text-lg font-bold text-blue-800 mb-6 flex items-center">
+            <i data-lucide="calendar" class="mr-2 h-5 w-5"></i> 幼稚園等の手続き
+          </h3>
+          
+          <div class="relative border-l-2 border-blue-200 ml-3 md:ml-6 space-y-8">
+            <div class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-blue-500 border-2 border-white"></div>
+              <div class="text-sm font-bold text-blue-600 mb-1">前年 10月中</div>
+              <h4 class="font-bold text-gray-800 mb-1">入園願書の提出</h4>
+              <p class="text-sm text-gray-600">希望する幼稚園等の施設へ直接、入園願書を提出します。<br/>※施設によって受付期間が異なる場合があります。</p>
+            </div>
+            
+            <div class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-blue-300 border-2 border-white"></div>
+              <div class="text-sm font-bold text-blue-600 mb-1">願書提出後</div>
+              <h4 class="font-bold text-gray-800 mb-1">面接・用品購入など</h4>
+              <p class="text-sm text-gray-600">各施設にて入園に向けた面接や用品購入などが行われます。詳細は施設からの案内に従ってください。</p>
+            </div>
+
+            <div class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-blue-500 border-2 border-white"></div>
+              <div class="text-sm font-bold text-blue-600 mb-1">4月初旬 〜</div>
+              <h4 class="font-bold text-gray-800 mb-1">入園</h4>
+              <p class="text-sm text-gray-600">入園式を迎え、新しい生活がスタートします！</p>
+            </div>
+          </div>
+          
+          <div class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 class="font-bold text-gray-800 mb-2">💡 年度途中の入園希望について</h4>
+            <ul class="text-sm text-gray-700 leading-relaxed list-disc list-inside space-y-1">
+              <li>年度途中の入園を希望される場合は、<strong>入園希望の1ヶ月前まで</strong>に手続きが必要です。</li>
+              <li>入園日は原則<strong>毎月1日</strong>となります。（1日が土日祝日の場合は翌平日）</li>
+            </ul>
+          </div>
+        </div>
+      `;
+
+      return `
+        <div class="space-y-6 animate-fade-in">
+          <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-orange-400 pb-2">入所・入園までの流れ（例）</h2>
+          
+          <div class="flex bg-gray-200 p-1 rounded-lg">
+            <button 
+              onclick="setFlowType('hoiku')" 
+              class="flex-1 py-2 text-sm font-bold rounded-md transition ${type === 'hoiku' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:bg-gray-300'}"
+            >
+              保育園等（保育枠）
+            </button>
+            <button 
+              onclick="setFlowType('kyouiku')" 
+              class="flex-1 py-2 text-sm font-bold rounded-md transition ${type === 'kyouiku' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:bg-gray-300'}"
+            >
+              幼稚園等（教育枠）
+            </button>
+          </div>
+
+          ${type === 'hoiku' ? hoikuContent : kyouikuContent}
+        </div>
+      `;
+    }
+
+    function getServicesHTML() {
+      return `
+        <div class="space-y-6 animate-fade-in">
+          <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-orange-400 pb-2">その他の支援・サービス</h2>
+          
+          <div class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+            <h3 class="text-xl font-bold text-orange-700 mb-4 flex items-center">
+              <i data-lucide="heart-handshake" class="mr-2 h-6 w-6"></i> 一時預かり事業
+            </h3>
+            <p class="text-gray-700 text-sm mb-4">
+              家庭において保育を受けることが一時的に困難となった乳幼児（おおむね生後6ヶ月を経過した子）を一時的に預かる事業です。
+            </p>
+            
+            <div class="space-y-3 text-sm text-gray-700 bg-orange-50 p-4 rounded-lg">
+              <div class="flex border-b border-orange-100 pb-2">
+                <span class="font-bold w-24 flex-shrink-0 text-orange-800">実施施設:</span>
+                <span>遠賀川保育園、南部保育園、山びこ保育園</span>
+              </div>
+              <div class="flex border-b border-orange-100 pb-2 pt-1">
+                <span class="font-bold w-24 flex-shrink-0 text-orange-800">利用料:</span>
+                <div>
+                  <p>0〜2歳児：1時間 500円</p>
+                  <p>3〜5歳児：1時間 400円</p>
+                  <p class="text-xs text-gray-500 mt-1">※利用料とは別に給食費等が必要となることがあります。</p>
+                </div>
+              </div>
+              <div class="flex border-b border-orange-100 pb-2 pt-1">
+                <span class="font-bold w-24 flex-shrink-0 text-orange-800">利用日時:</span>
+                <div>
+                  <p>月曜日〜土曜日 9:00〜17:00</p>
+                  <p class="text-xs text-gray-500 mt-1">※原則週3日まで。日祝、年末年始、お盆等は利用不可。</p>
+                </div>
+              </div>
+              <div class="flex pt-1">
+                <span class="font-bold w-24 flex-shrink-0 text-orange-800">利用方法:</span>
+                <span>利用を希望する保育園へ直接お申し込みください（事前登録制）。利用前日の17:00までに要予約。</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+            <h3 class="text-xl font-bold text-blue-700 mb-4 flex items-center">
+              <i data-lucide="baby" class="mr-2 h-6 w-6"></i> こども誰でも通園制度
+            </h3>
+            <div class="bg-blue-50 p-4 rounded-lg">
+              <p class="text-gray-700 text-sm leading-relaxed mb-3">
+                保護者の就労要件を問わず、時間単位で柔軟に保育施設を利用できる新しい制度です。<br/>
+                保育所等に通っていない子どもたちが、同世代の子どもと遊んだり、保護者の方が育児のリフレッシュをしたりする目的で利用できます。
+              </p>
+              <div class="flex items-start text-sm text-gray-800 font-medium bg-white p-3 rounded border border-blue-100 mb-4">
+                <i data-lucide="info" class="h-5 w-5 mr-2 text-blue-600 mt-0.5 flex-shrink-0"></i>
+                <p>
+                  遠賀町内での実施状況や、対象となる年齢・施設、利用上限時間などの詳細については、下記の町公式ページをご確認ください。
+                </p>
+              </div>
+              <a href="https://www.town.onga.lg.jp/soshiki/41/85948.html" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition bg-white px-4 py-2 rounded border border-blue-200 shadow-sm">
+                <i data-lucide="external-link" class="h-4 w-4 mr-1.5"></i> 制度の詳細・対象施設はこちら（町公式HP）
+              </a>
+            </div>
+          </div>
+
+          <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-orange-400 pb-2 mt-8">遠賀町内の子育て支援情報</h2>
+
+          <div class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+            <h3 class="text-xl font-bold text-green-700 mb-4 flex items-center">
+              <i data-lucide="smile" class="mr-2 h-6 w-6"></i> 地域子育て支援ひろば「ぐっぴい」
+            </h3>
+            <div class="bg-green-50 p-4 rounded-lg">
+              <p class="text-gray-700 text-sm leading-relaxed mb-3">
+                おんがみらいテラス3階にある、0歳から就学前のお子様とその保護者が無料で利用できる遊び場です。<br/>
+                保育士が常駐しており、子育ての相談も気軽にできます。電車の見える屋外テラスや大型遊具も人気です。
+              </p>
+              <a href="https://www.town.onga.lg.jp/map/6146.html" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-medium text-green-600 hover:text-green-800 transition bg-white px-4 py-2 rounded border border-green-200 shadow-sm">
+                <i data-lucide="external-link" class="h-4 w-4 mr-1.5"></i> 施設詳細はこちら（町公式HP）
+              </a>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+            <h3 class="text-xl font-bold text-purple-700 mb-4 flex items-center">
+              <i data-lucide="info" class="mr-2 h-6 w-6"></i> 遠賀町の子育て支援（総合案内）
+            </h3>
+            <div class="bg-purple-50 p-4 rounded-lg">
+              <p class="text-gray-700 text-sm leading-relaxed mb-3">
+                遠賀町が実施している子育てに関する様々な支援・助成、相談窓口、各種手当などの情報がまとまっている総合案内ページです。<br/>
+                子ども医療費の助成や児童手当、子育て教室などの詳しい情報はこちらからご確認ください。
+              </p>
+              <a href="https://www.town.onga.lg.jp/life/3/12/47/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-medium text-purple-600 hover:text-purple-800 transition bg-white px-4 py-2 rounded border border-purple-200 shadow-sm">
+                <i data-lucide="external-link" class="h-4 w-4 mr-1.5"></i> 子育て支援一覧を見る（町公式HP）
+              </a>
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    // --- 初期化 ---
+    window.addEventListener('DOMContentLoaded', () => {
+      renderApp();
+    });
+
+  </script>
+</body>
+</html>
