@@ -9,6 +9,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   
   <style>
+    /* アニメーションとユーティリティクラス */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(5px); }
       to { opacity: 1; transform: translateY(0); }
@@ -24,6 +25,7 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+    /* 選択不可にするユーティリティ */
     .no-select {
       -webkit-user-select: none;
       user-select: none;
@@ -32,6 +34,7 @@
 </head>
 <body class="bg-gray-50 flex flex-col font-sans min-h-screen overflow-x-hidden">
 
+  <!-- 免責事項ポップアップ -->
   <div id="disclaimer-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
     <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in">
       <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
@@ -54,6 +57,7 @@
     </div>
   </div>
 
+  <!-- Header -->
   <header class="bg-orange-500 text-white shadow-md sticky top-0 z-40">
     <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
       <h1 class="text-xl font-bold flex items-center cursor-pointer no-select" onclick="switchTab('home')">
@@ -66,11 +70,13 @@
     </div>
   </header>
 
+  <!-- Main Content Area -->
   <div class="flex-1 max-w-4xl mx-auto w-full flex flex-col md:flex-row pb-20 md:pb-0 relative">
     
     <!-- Desktop Sidebar -->
     <aside class="hidden md:block w-64 p-6 flex-shrink-0 z-10">
       <nav class="space-y-2 sticky top-24" id="desktop-nav">
+        <!-- ナビゲーションアイテムはJSでハイライト制御 -->
         <button onclick="switchTab('home')" data-tab="home" class="nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition hover:bg-gray-200 text-gray-700">
           <i data-lucide="home" class="mr-3 h-5 w-5"></i> ホーム
         </button>
@@ -95,13 +101,14 @@
     </main>
   </div>
 
+  <!-- Footer Info Box -->
   <div class="bg-orange-900 text-orange-50 py-8 px-4 mt-auto z-10 relative">
     <div class="max-w-4xl mx-auto flex flex-col items-center">
       <div class="mb-6 w-full text-center border-b border-orange-800/60 pb-6">
-        <p class="text-xs mb-3 font-medium text-orange-200">アプリに関するお問い合わせ・ご要望はこちら</p>
+        <p class="text-xs mb-3 font-medium text-orange-200">アプリに関するお問い合わせ・ご要望・情報掲載などはこちら</p>
         <a href="https://line.me/R/ti/p/@860avzup" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-2.5 px-6 rounded-xl transition duration-200 shadow-md text-sm">
           <i data-lucide="message-circle" class="h-4 w-4 mr-2"></i>
-          公式LINEで問い合わせる
+          公式LINEへ問い合わせる
         </a>
       </div>
       <div class="text-center text-sm opacity-75">
@@ -111,8 +118,10 @@
     </div>
   </div>
 
+  <!-- Mobile Bottom Navigation -->
   <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-40 pb-safe overflow-x-auto hide-scrollbar">
     <div class="flex items-center justify-around h-16 w-full px-1" id="mobile-nav">
+      <!-- モバイルナビゲーションアイテムはJSでハイライト制御 -->
       <button onclick="switchTab('home')" data-tab="home" class="mobile-nav-btn flex flex-col items-center justify-center w-full h-full text-gray-500">
         <i data-lucide="home" class="h-5 w-5"></i>
         <span class="text-[10px] mt-1 font-medium">ホーム</span>
@@ -138,6 +147,7 @@
 
   <!-- Application Logic -->
   <script>
+    // --- データ定義 ---
     const facilities = [
       { name: '遠賀川保育園', type: '保育園', address: '遠賀川二丁目6番22号', capacity: '140名', age: '生後3ヶ月〜', time: '7:00〜18:00 (延長19:00)', phone: '093-293-0184', url: 'https://www.ongagawa-hoikuen.com/' },
       { name: '南部保育園', type: '保育園', address: '浅木二丁目19番27号', capacity: '160名', age: '生後3ヶ月〜', time: '7:00〜18:00 (延長19:00)', phone: '093-293-2256', url: 'https://www.ans.co.jp/n/nanbuhoikuen/' },
@@ -194,42 +204,55 @@
     const statusOptions = ['', ...Object.keys(reasonDocs)];
 
     // --- 免責事項ポップアップ制御 ---
-    window.closeDisclaimer = function() {
+    function closeDisclaimer() {
       const modal = document.getElementById('disclaimer-modal');
       if (modal) {
         modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
       }
-    };
+    }
 
     // --- 状態管理 ---
     let state = {
       activeTab: 'home',
       facilityType: 'hoiku', 
-      docs: { checkedItems: {}, familyType: 'two', parent1Status: '', parent2Status: '' },
-      simulator: { step: 1, answers: {}, resultType: null },
-      flow: { type: 'hoiku' }
+      docs: {
+        checkedItems: {},
+        familyType: 'two',
+        parent1Status: '',
+        parent2Status: ''
+      },
+      simulator: {
+        step: 1,
+        answers: {},
+        resultType: null // 'k1' (1号), 'k23' (2・3号), 'none' (対象外), null (未判定)
+      },
+      flow: {
+        type: 'hoiku' 
+      }
     };
 
-    window.switchTab = function(tabId) {
+    // --- コア機能 ---
+    function switchTab(tabId) {
       state.activeTab = tabId;
       renderApp();
       window.scrollTo(0, 0); 
-    };
+    }
 
     function renderApp() {
-      document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(btn => {
+      document.querySelectorAll('.nav-btn').forEach(btn => {
         if (btn.dataset.tab === state.activeTab) {
-          if (btn.classList.contains('nav-btn')) {
-            btn.className = "nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition bg-orange-100 text-orange-800 font-bold";
-          } else {
-            btn.className = "mobile-nav-btn flex flex-col items-center justify-center w-full h-full text-orange-600";
-          }
+          btn.className = "nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition bg-orange-100 text-orange-800 font-bold";
         } else {
-          if (btn.classList.contains('nav-btn')) {
-            btn.className = "nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition hover:bg-gray-200 text-gray-700";
-          } else {
-            btn.className = "mobile-nav-btn flex flex-col items-center justify-center w-full h-full text-gray-500";
-          }
+          btn.className = "nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition hover:bg-gray-200 text-gray-700";
+        }
+      });
+
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        if (btn.dataset.tab === state.activeTab) {
+          btn.className = "mobile-nav-btn flex flex-col items-center justify-center w-full h-full text-orange-600";
+        } else {
+          btn.className = "mobile-nav-btn flex flex-col items-center justify-center w-full h-full text-gray-500";
         }
       });
 
@@ -256,7 +279,6 @@
       
       const birthDate = new Date(dateStr);
       let cohortYear = birthDate.getFullYear();
-      // 早生まれ対応
       if (birthDate.getMonth() < 3 || (birthDate.getMonth() === 3 && birthDate.getDate() === 1)) {
         cohortYear--;
       }
@@ -390,10 +412,10 @@
       `;
     }
 
-    window.setFacilityType = function(type) {
+    function setFacilityType(type) {
       state.facilityType = type;
       renderApp();
-    };
+    }
 
     function getFacilityHTML() {
       let contentHTML = '';
@@ -523,6 +545,7 @@
       `;
     }
 
+    // --- 子ども向け教室用関数 ---
     window.copyAndOpenLine = function() {
       const name = document.getElementById('form-name').value.trim();
       const category = document.getElementById('form-category').value.trim();
@@ -542,6 +565,11 @@
 
       const text = `【掲載希望】\n・教室名：${name}\n・カテゴリ：${category}\n・対象年齢：${age}\n・開催場所：${location}\n・住所：${address}\n・連絡先：${contact}`;
       
+      // 自動的にテキストをセットして公式LINEを開くためのURL (LINE URLスキーム)
+      // https://line.me/R/oaMessage/{LINE_ID}/?{message}
+      const lineUrl = 'https://line.me/R/oaMessage/@860avzup/?' + encodeURIComponent(text);
+      
+      // 念のためクリップボードにもコピーしておく
       const textArea = document.createElement("textarea");
       textArea.value = text;
       document.body.appendChild(textArea);
@@ -554,8 +582,8 @@
       
       setTimeout(() => {
         msg.classList.add('hidden');
-        window.open('https://line.me/R/ti/p/@860avzup', '_blank');
-      }, 1500);
+        window.open(lineUrl, '_blank');
+      }, 1000);
     };
 
     function getClassesHTML() {
@@ -644,20 +672,21 @@
               </div>
 
               <button onclick="copyAndOpenLine()" class="w-full mt-4 bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3.5 rounded-xl flex justify-center items-center transition shadow-md">
-                <i data-lucide="copy" class="h-5 w-5 mr-2"></i> 入力内容をコピーしてLINEを開く
+                <i data-lucide="send" class="h-5 w-5 mr-2"></i> 入力内容をLINEで送信する
               </button>
             </div>
             
-            <!-- コピー完了メッセージ -->
+            <!-- 処理中メッセージ -->
             <div id="copy-message" class="hidden mt-3 p-3 bg-green-50 border border-green-200 text-green-700 text-sm text-center rounded-lg font-bold flex items-center justify-center animate-fade-in">
-              <i data-lucide="check-circle" class="h-4 w-4 mr-2"></i> コピーしました！LINEのトーク画面に貼り付けて送信してください。
+              <i data-lucide="loader-2" class="h-4 w-4 mr-2 animate-spin"></i> LINEを起動しています...
             </div>
           </div>
         </div>
       `;
     }
 
-    window.handleSimAnswer = function(key, value, nextStep) {
+    // --- Simulator & Documents Functions (Integrated into Flow) ---
+    function handleSimAnswer(key, value, nextStep) {
       state.simulator.answers[key] = value;
       state.simulator.step = nextStep;
       
@@ -679,14 +708,14 @@
       }
       
       renderApp();
-    };
+    }
     
-    window.resetSimulator = function() {
+    function resetSimulator() {
       state.simulator.step = 1;
       state.simulator.answers = {};
       state.simulator.resultType = null;
       renderApp();
-    };
+    }
 
     function getSimResultHTML() {
       const { type, need, age, tax } = state.simulator.answers;
@@ -904,21 +933,21 @@
       `;
     }
 
-    window.toggleDocCheck = function(id) {
+    function toggleDocCheck(id) {
       state.docs.checkedItems[id] = !state.docs.checkedItems[id];
       renderApp();
-    };
+    }
     
-    window.updateFamilyType = function(type) {
+    function updateFamilyType(type) {
       state.docs.familyType = type;
       renderApp();
-    };
+    }
 
-    window.updateParentStatus = function(parent, value) {
+    function updateParentStatus(parent, value) {
       if (parent === 'parent1') state.docs.parent1Status = value;
       if (parent === 'parent2') state.docs.parent2Status = value;
       renderApp();
-    };
+    }
 
     function getDocumentsSectionHTML() {
       const getCheckSvg = (isChecked) => isChecked ? `<svg class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>` : '';
@@ -954,6 +983,7 @@
           <p class="text-sm text-gray-600 mb-6">状況に合わせて必要な書類を確認してください。タップでチェックマークを付けられます。</p>
           
           <div class="space-y-6 w-full">
+            <!-- 全員必要なもの -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div class="bg-orange-50 px-4 py-3 border-b border-gray-200">
                 <h4 class="font-bold text-gray-800">${documentsData[0].category}</h4>
@@ -964,12 +994,15 @@
               </div>
             </div>
 
+            <!-- 保育を必要とする理由 -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div class="bg-orange-50 px-4 py-3 border-b border-gray-200">
                 <h4 class="font-bold text-gray-800">保育を必要とする理由を証明するもの</h4>
                 <p class="text-xs text-orange-600 mt-1">※原則、父母どちらも提出が必要です。（幼稚園等希望の場合は不要）</p>
               </div>
               <div class="p-4 space-y-4">
+                
+                <!-- 世帯タイプの選択 -->
                 <div class="flex bg-gray-100 p-1 rounded-lg w-full md:w-fit mb-2">
                   <button 
                     onclick="updateFamilyType('two')" 
@@ -986,6 +1019,7 @@
                 </div>
 
                 ${state.docs.familyType === 'two' ? `
+                  <!-- 父親 -->
                   <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
                     <label class="block text-sm font-bold text-blue-800 mb-2">父親の状況</label>
                     <select 
@@ -1004,6 +1038,8 @@
                       </div>
                     ` : ''}
                   </div>
+
+                  <!-- 母親 -->
                   <div class="bg-pink-50 p-4 rounded-lg border border-pink-100">
                     <label class="block text-sm font-bold text-pink-800 mb-2">母親の状況</label>
                     <select 
@@ -1023,6 +1059,7 @@
                     ` : ''}
                   </div>
                 ` : `
+                  <!-- ひとり親 -->
                   <div class="bg-purple-50 p-4 rounded-lg border border-purple-100">
                     <label class="block text-sm font-bold text-purple-800 mb-2">保護者の状況</label>
                     <select 
@@ -1051,6 +1088,7 @@
               </div>
             </div>
 
+            <!-- その他 -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div class="bg-orange-50 px-4 py-3 border-b border-gray-200">
                 <h4 class="font-bold text-gray-800">${documentsData[1].category}</h4>
@@ -1064,10 +1102,10 @@
       `;
     }
 
-    window.setFlowType = function(type) {
+    function setFlowType(type) {
       state.flow.type = type;
       renderApp();
-    };
+    }
 
     function getFlowHTML() {
       const type = state.flow.type;
@@ -1133,6 +1171,7 @@
           
           ${getDocumentsSectionHTML()}
 
+          <!-- 問い合わせ先（保育） -->
           <div class="mt-12 bg-orange-50 border border-orange-200 rounded-xl p-6 text-center animate-fade-in w-full">
             <h4 class="font-bold text-orange-800 mb-2">保育施設への入所手続きに関するお問い合わせ</h4>
             <p class="text-gray-800 font-bold mb-1">遠賀町役場 こども家庭課 子育て支援係</p>
@@ -1181,6 +1220,7 @@
               </div>
             </div>
 
+            <!-- 問い合わせ先（教育枠） -->
             <div class="mt-12 bg-blue-50 border border-blue-200 rounded-xl p-6 text-center w-full">
               <p class="text-blue-800 font-bold flex items-center justify-center">
                 <i data-lucide="info" class="h-5 w-5 mr-2"></i>
@@ -1273,6 +1313,7 @@
           </div>
         </div>
 
+        <!-- 問い合わせ先（学校） -->
         <div class="mt-12 bg-blue-50 border border-blue-200 rounded-xl p-6 text-center animate-fade-in w-full">
           <h4 class="font-bold text-blue-800 mb-2">小中学校の手続きに関するお問い合わせ</h4>
           <p class="text-gray-800 font-bold mb-1">遠賀町役場 学校教育課 教育総務係</p>
@@ -1328,6 +1369,7 @@
           </div>
         </div>
 
+        <!-- 問い合わせ先（学童） -->
         <div class="mt-12 bg-green-50 border border-green-200 rounded-xl p-6 text-center animate-fade-in w-full">
           <h4 class="font-bold text-green-800 mb-2">学童保育の手続きに関するお問い合わせ</h4>
           <p class="text-gray-800 font-bold mb-1">遠賀町役場 こども家庭課 子育て支援係</p>
@@ -1377,7 +1419,7 @@
     function getServicesHTML() {
       return `
         <div class="space-y-6 animate-fade-in w-full">
-          <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-orange-400 pb-2">その他の行政支援</h2>
+          <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-orange-400 pb-2">その他の支援・サービス</h2>
           
           <div class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm w-full">
             <h3 class="text-xl font-bold text-orange-700 mb-4 flex items-center">
@@ -1470,140 +1512,6 @@
             </div>
           </div>
 
-        </div>
-      `;
-    }
-
-    window.copyAndOpenLine = function() {
-      const name = document.getElementById('form-name').value.trim();
-      const category = document.getElementById('form-category').value.trim();
-      const age = document.getElementById('form-age').value.trim();
-      const location = document.getElementById('form-location').value.trim();
-      const address = document.getElementById('form-address').value.trim();
-      const contact = document.getElementById('form-contact').value.trim();
-      const errorMsg = document.getElementById('form-error-message');
-
-      // バリデーションチェック（すべて必須）
-      if (!name || !category || !age || !location || !address || !contact) {
-        errorMsg.classList.remove('hidden');
-        return;
-      }
-      
-      errorMsg.classList.add('hidden');
-
-      const text = `【掲載希望】\n・教室名：${name}\n・カテゴリ：${category}\n・対象年齢：${age}\n・開催場所：${location}\n・住所：${address}\n・連絡先：${contact}`;
-      
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      
-      const msg = document.getElementById('copy-message');
-      msg.classList.remove('hidden');
-      
-      setTimeout(() => {
-        msg.classList.add('hidden');
-        window.open('https://line.me/R/ti/p/@860avzup', '_blank');
-      }, 1500);
-    };
-
-    function getClassesHTML() {
-      return `
-        <div class="space-y-6 w-full animate-fade-in">
-          <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-orange-400 pb-2">遠賀町内の子ども向け教室</h2>
-          
-          <div class="bg-yellow-50 border border-yellow-200 p-6 rounded-xl text-center shadow-sm">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">掲載情報は、随時更新して参ります</h3>
-            <p class="text-sm text-gray-600">※以下は将来追加予定の表示イメージです。</p>
-          </div>
-
-          <!-- 表示イメージ（モックアップ） -->
-          <div class="opacity-50 pointer-events-none grid grid-cols-1 lg:grid-cols-2 gap-4 relative">
-            <div class="absolute inset-0 bg-white/40 z-10 rounded-xl"></div>
-            <div class="bg-white border border-gray-200 p-5 rounded-xl shadow-sm">
-              <div class="flex justify-between items-start mb-3">
-                <h3 class="text-lg font-bold text-gray-800">○○サッカークラブ</h3>
-                <span class="text-xs font-semibold px-2 py-1 bg-green-100 text-green-800 rounded-full">サッカー</span>
-              </div>
-              <div class="space-y-2 text-sm text-gray-600">
-                <p class="flex items-center"><i data-lucide="user" class="h-4 w-4 mr-2 text-gray-400"></i> 対象: 年中〜小学6年生</p>
-                <p class="flex items-center"><i data-lucide="map-pin" class="h-4 w-4 mr-2 text-gray-400"></i> 場所: ○○グラウンド</p>
-                <p class="flex items-center"><i data-lucide="clock" class="h-4 w-4 mr-2 text-gray-400"></i> 日時: 毎週水・金曜日 16:30〜</p>
-                <p class="flex items-center"><i data-lucide="link" class="h-4 w-4 mr-2 text-gray-400"></i> 連絡先: 090-XXXX-XXXX</p>
-              </div>
-            </div>
-             <div class="bg-white border border-gray-200 p-5 rounded-xl shadow-sm">
-              <div class="flex justify-between items-start mb-3">
-                <h3 class="text-lg font-bold text-gray-800">△△ダンススクール</h3>
-                <span class="text-xs font-semibold px-2 py-1 bg-purple-100 text-purple-800 rounded-full">ダンス</span>
-              </div>
-              <div class="space-y-2 text-sm text-gray-600">
-                <p class="flex items-center"><i data-lucide="user" class="h-4 w-4 mr-2 text-gray-400"></i> 対象: 3歳〜中学生</p>
-                <p class="flex items-center"><i data-lucide="map-pin" class="h-4 w-4 mr-2 text-gray-400"></i> 場所: 町内スタジオ</p>
-                <p class="flex items-center"><i data-lucide="clock" class="h-4 w-4 mr-2 text-gray-400"></i> 日時: 毎週土曜日 10:00〜</p>
-                <p class="flex items-center"><i data-lucide="link" class="h-4 w-4 mr-2 text-gray-400"></i> 連絡先: @example_insta</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- 掲載希望フォーム -->
-          <div class="bg-white border-2 border-[#06C755]/30 p-6 rounded-xl mt-8">
-            <h3 class="text-lg font-bold text-[#06C755] mb-4 flex items-center justify-center">
-              <i data-lucide="megaphone" class="h-5 w-5 mr-2"></i> 教室の掲載をご希望の方へ
-            </h3>
-            <p class="text-sm text-gray-600 text-center mb-4">
-              遠賀町内で子ども向け教室（スポーツ、文化系、学習塾など）を運営されている方で、当アプリへの情報掲載をご希望の場合は、以下のフォームに入力して公式LINEへお送りください。（掲載無料）
-            </p>
-
-            <div class="bg-red-50 p-3 rounded-lg border border-red-200 mb-6">
-              <p class="text-red-700 text-xs font-bold flex items-start">
-                <i data-lucide="alert-triangle" class="h-4 w-4 mr-1.5 mt-0.5 flex-shrink-0"></i>
-                <span>【ご注意】掲載希望フォームに入力された内容はすべて公開されます。公開したくない情報（個人の携帯電話番号や自宅住所など）は記入しないようにお願いします。</span>
-              </p>
-            </div>
-
-            <div class="space-y-3">
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">教室名 <span class="text-red-500 font-normal ml-1">必須</span></label>
-                <input type="text" id="form-name" placeholder="例）遠賀○○クラブ" class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#06C755] outline-none">
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">カテゴリ <span class="text-red-500 font-normal ml-1">必須</span></label>
-                <input type="text" id="form-category" placeholder="例）サッカー、ダンス、書道 など" class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#06C755] outline-none">
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">対象年齢 <span class="text-red-500 font-normal ml-1">必須</span></label>
-                <input type="text" id="form-age" placeholder="例）年中〜小学6年生" class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#06C755] outline-none">
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">開催場所 <span class="text-red-500 font-normal ml-1">必須</span></label>
-                <input type="text" id="form-location" placeholder="例）○○小学校 グラウンド" class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#06C755] outline-none">
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">開催場所の住所 <span class="text-red-500 font-normal ml-1">必須</span></label>
-                <input type="text" id="form-address" placeholder="例）遠賀町○○ 1-2-3" class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#06C755] outline-none">
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">連絡先（HP・SNS・電話番号等） <span class="text-red-500 font-normal ml-1">必須</span></label>
-                <input type="text" id="form-contact" placeholder="例）https://... または 090-XXXX-XXXX" class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#06C755] outline-none">
-              </div>
-              
-              <div id="form-error-message" class="hidden text-red-600 text-sm font-bold text-center mt-4 bg-red-50 p-2 rounded border border-red-200">
-                <i data-lucide="alert-circle" class="inline h-4 w-4 mr-1 relative -top-0.5"></i>すべての項目を入力してください。
-              </div>
-
-              <button onclick="copyAndOpenLine()" class="w-full mt-4 bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3.5 rounded-xl flex justify-center items-center transition shadow-md">
-                <i data-lucide="copy" class="h-5 w-5 mr-2"></i> 入力内容をコピーしてLINEを開く
-              </button>
-            </div>
-            
-            <!-- コピー完了メッセージ -->
-            <div id="copy-message" class="hidden mt-3 p-3 bg-green-50 border border-green-200 text-green-700 text-sm text-center rounded-lg font-bold flex items-center justify-center animate-fade-in">
-              <i data-lucide="check-circle" class="h-4 w-4 mr-2"></i> コピーしました！LINEのトーク画面に貼り付けて送信してください。
-            </div>
-          </div>
         </div>
       `;
     }
