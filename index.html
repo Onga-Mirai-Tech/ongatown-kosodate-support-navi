@@ -65,10 +65,14 @@
       <h1 class="text-xl font-bold flex items-center cursor-pointer no-select" onclick="switchTab('home')">
         <i data-lucide="baby" class="mr-2 h-6 w-6"></i>
         遠賀町 子育て支援ナビ
+        <span class="ml-3 px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm hidden sm:inline-block">v1.1.0</span>
       </h1>
-      <a href="https://www.town.onga.lg.jp/life/3/" target="_blank" rel="noopener noreferrer" class="text-xs flex items-center bg-orange-600 px-3 py-1.5 rounded-full hover:bg-orange-700 transition no-select">
-        町公式HP <i data-lucide="external-link" class="ml-1 h-3 w-3"></i>
-      </a>
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm sm:hidden">v1.1.0</span>
+        <a href="https://www.town.onga.lg.jp/life/3/" target="_blank" rel="noopener noreferrer" class="text-xs flex items-center bg-orange-600 px-3 py-1.5 rounded-full hover:bg-orange-700 transition no-select">
+          町公式HP <i data-lucide="external-link" class="ml-1 h-3 w-3"></i>
+        </a>
+      </div>
     </div>
   </header>
 
@@ -152,9 +156,6 @@
     // ==========================================
     // 💡 スプレッドシート連携設定
     // ==========================================
-    // Googleスプレッドシートから「ウェブに公開（カンマ区切り/CSV形式）」で取得したURLを
-    // 下のシングルクォーテーション('')の中に貼り付けてください。
-    // 例: const SPREADSHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX.../pub?output=csv';
     const SPREADSHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT8GT5hwC9pQFveFcOlep4LQ6yxUhHx7SDwQxEntjzrW7WrudMgFcCNLr6AVQjSdXwaxBJLIghFtbIK/pub?output=csv'; 
     // ==========================================
 
@@ -183,13 +184,9 @@
     ];
 
     // 教室情報のデータベース
-    // ※スプレッドシート連携（CSVのURL設定）がない場合は、以下のサンプルデータが表示されます。
     let kidsClasses = [
       { name: '【サンプル】遠賀ドリームサッカークラブ', category: 'スポーツ', target: '年中〜小学6年生', location: '遠賀総合運動公園', address: '広渡23-6', schedule: '毎週水・金 16:30〜18:00', phone: '090-0000-0000', link: '' },
       { name: '【サンプル】みらいキッズダンス', category: 'ダンス', target: '3歳〜中学生', location: 'おんがみらいテラス', address: '遠賀川一丁目1番2号', schedule: '毎週土 10:00〜12:00', phone: '', link: 'https://www.instagram.com/mirai_dance_onga' },
-      { name: '【サンプル】あおぞら書道教室', category: '文化・芸術', target: '小学生〜高校生', location: '中央公民館', address: '今古賀519-1', schedule: '毎週月・木 16:00〜', phone: '093-000-0000', link: '' },
-      { name: '【サンプル】ステップアップ学習塾', category: '学習塾', target: '小学4年生〜中学3年生', location: '遠賀川駅前ビル2F', address: '遠賀川1-1-1', schedule: '平日 17:00〜21:00', phone: '', link: 'https://example.com/stepup' },
-      { name: '【サンプル】遠賀リトル野球部', category: 'スポーツ', target: '小学1年生〜小学6年生', location: '遠賀中学校グラウンド', address: '広渡289', schedule: '土日祝 9:00〜15:00', phone: '080-0000-0000', link: '' },
     ];
 
     const documentsData = [
@@ -1184,6 +1181,45 @@
                 <li>新しく通う学校へ必要書類を提出する。</li>
               </ol>
             </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-fade-in mt-6 w-full">
+          <h3 class="text-lg font-bold text-teal-800 mb-4 flex items-center">
+            <i data-lucide="map" class="mr-2 h-5 w-5"></i> 区域外（校区外）就学の手続き
+          </h3>
+          
+          <div class="bg-teal-50 p-4 rounded-lg mb-4">
+            <p class="text-sm text-gray-700 leading-relaxed">
+              特別な事情により、指定された通学区域（校区）以外の学校への就学を希望する場合は、教育委員会へ申請し、承認を得る必要があります。<br>
+              ※就学先を変更する場合、保護者の責任のもと通学の安全が確保されることが条件となります。
+            </p>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="border border-gray-200 rounded-lg p-4 bg-white">
+              <h4 class="font-bold text-gray-800 mb-2">校区外就学（町内での指定校変更）</h4>
+              <p class="text-xs text-gray-600 mb-2">遠賀町に住みながら、事情により別の校区の学校に通う場合</p>
+              <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+                <li><strong>主な理由の例:</strong> 保護者の就労等で別居親族が放課後預かる場合、町内転居（小学校:今年度末まで/中学校:卒業まで）、おおむね6ヶ月以内の転居予定、心身の理由 など</li>
+                <li><strong>必要なもの:</strong> 申請書、理由を証明する書類（就労証明書など）</li>
+              </ul>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg p-4 bg-white">
+              <h4 class="font-bold text-gray-800 mb-2">区域外就学</h4>
+              <p class="text-xs text-gray-600 mb-2">遠賀町外に住みながら、遠賀町の学校に通う場合</p>
+              <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+                <li><strong>主な理由の例:</strong> 町外へ転出した後も引き続き従前の学校に通いたい場合（今年度末まで）、おおむね6ヶ月以内の町内転入予定 など</li>
+                <li><strong>必要なもの:</strong> 申請書、理由を証明する書類</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="mt-4 text-right">
+            <a href="https://www.town.onga.lg.jp/soshiki/16/1461.html" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-medium text-teal-600 hover:text-teal-800 transition">
+              <i data-lucide="external-link" class="h-4 w-4 mr-1"></i> 詳しくはこちら（参考文献：町公式HP）
+            </a>
           </div>
         </div>
 
