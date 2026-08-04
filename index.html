@@ -6,7 +6,8 @@
   <title>遠賀町 子育て支援ナビ</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- lucideはバージョン固定（@latestは将来アイコン名の変更等で予告なく壊れる可能性があるため） -->
+  <script src="https://unpkg.com/lucide@1.28.0"></script>
   <!-- スプレッドシート読み込み（CSV解析）用ライブラリ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   
@@ -65,10 +66,10 @@
       <h1 class="text-xl font-bold flex items-center cursor-pointer no-select" onclick="switchTab('home')">
         <i data-lucide="baby" class="mr-2 h-6 w-6"></i>
         遠賀町 子育て支援ナビ
-        <span class="ml-3 px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm hidden sm:inline-block">v1.1.0</span>
+        <span class="ml-3 px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm hidden sm:inline-block">v2.0.0</span>
       </h1>
       <div class="flex items-center gap-2">
-        <span class="px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm sm:hidden">v1.1.0</span>
+        <span class="px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm sm:hidden">v2.0.0</span>
         <a href="https://www.town.onga.lg.jp/life/3/" target="_blank" rel="noopener noreferrer" class="text-xs flex items-center bg-orange-600 px-3 py-1.5 rounded-full hover:bg-orange-700 transition no-select">
           町公式HP <i data-lucide="external-link" class="ml-1 h-3 w-3"></i>
         </a>
@@ -221,6 +222,35 @@
     };
     const statusOptions = ['', ...Object.keys(reasonDocs)];
 
+    // --- セキュリティ用ユーティリティ ---
+    // スプレッドシート（教室掲載フォーム経由）から読み込むデータは
+    // 外部入力とみなし、innerHTMLに挿入する前に必ずエスケープする。
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return '';
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // 電話番号は tel: リンクに使うため、数字と+のみを残す
+    function sanitizePhoneForHref(phone) {
+      return String(phone || '').replace(/[^0-9+]/g, '');
+    }
+
+    // リンクは http/https のURLのみ許可する（javascript: や data: 等の危険なスキームを排除）
+    function sanitizeUrl(url) {
+      const trimmed = String(url || '').trim();
+      if (!trimmed) return '';
+      // http/https以外の明示的なスキーム（javascript:, data: など）を含む場合は拒否
+      if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !/^https?:\/\//i.test(trimmed)) {
+        return '';
+      }
+      return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    }
+
     // --- 免責事項ポップアップ制御 ---
     function closeDisclaimer() {
       const modal = document.getElementById('disclaimer-modal');
@@ -235,7 +265,6 @@
       activeTab: 'home',
       facilityType: 'hoiku', 
       docs: {
-        checkedItems: {},
         familyType: 'two',
         parent1Status: '',
         parent2Status: ''
@@ -287,7 +316,85 @@
         default: contentDiv.innerHTML = getHomeHTML();
       }
 
-      lucide.createIcons();
+      renderLucideIcons();
+    }
+
+    // lucide（アイコン用CDN）の読み込みに失敗していても、アイコンが表示されないだけで
+    // アプリ本体の動作（タブ切り替え等）は継続させるための防御的ラッパー
+    function renderLucideIcons() {
+      if (typeof lucide === 'undefined') {
+        console.warn('lucideが読み込めませんでした。アイコンは表示されませんが、他の機能は利用できます。');
+        return;
+      }
+      try {
+        lucide.createIcons();
+      } catch (e) {
+        console.error('lucide.createIcons()の実行に失敗しました:', e);
+      }
+    }
+
+    // --- 生年月日ベースの計算ロジック（共通） ---
+    // 4月2日〜翌年4月1日を1年度とする、日本の学齢区切りルール。
+    // （4/1生まれは前年度扱いになる点に注意。民法上、年齢は誕生日の前日に加算されるため）
+    function getFiscalYearOf(date) {
+      let y = date.getFullYear();
+      const m = date.getMonth(); // 0-indexed
+      const d = date.getDate();
+      if (m < 3 || (m === 3 && d === 1)) {
+        y--;
+      }
+      return y;
+    }
+
+    function formatDateJp(date) {
+      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+    }
+    function formatYearMonthJp(date) {
+      return `${date.getFullYear()}年${date.getMonth() + 1}月`;
+    }
+
+    // 生年月日から、現在の学年区分・満3歳の誕生日・認定切替日などを算出する共通関数。
+    // ホーム画面の早見表、シミュレーター（幼稚園・保育園どちらも）から利用する。
+    function getEnrollmentTimeline(dateStr, todayDate) {
+      const birthDate = new Date(dateStr);
+      const today = todayDate || new Date();
+
+      const cohortYear = getFiscalYearOf(birthDate);
+      const currentFiscalYear = getFiscalYearOf(today);
+      const currentFYAge = currentFiscalYear - cohortYear; // 今年度中に迎える年齢
+
+      // 満3歳の誕生日と、その翌月1日（1号認定／2号認定への切替日）
+      const man3Date = new Date(birthDate);
+      man3Date.setFullYear(man3Date.getFullYear() + 3);
+      const ninteiSwitchDate = new Date(man3Date.getFullYear(), man3Date.getMonth() + 1, 1);
+      const hasTurnedMan3 = today.getTime() >= man3Date.getTime();
+
+      let classLabel = '';
+      if (currentFYAge <= 0) classLabel = '0歳児クラスになる前';
+      else if (currentFYAge === 1) classLabel = '0歳児クラス';
+      else if (currentFYAge === 2) classLabel = '1歳児クラス';
+      else if (currentFYAge === 3) classLabel = '2歳児クラス';
+      else if (currentFYAge === 4) classLabel = '3歳児クラス（年少）';
+      else if (currentFYAge === 5) classLabel = '4歳児クラス（年中）';
+      else if (currentFYAge === 6) classLabel = '5歳児クラス（年長）';
+      else if (currentFYAge >= 7 && currentFYAge <= 12) classLabel = `小学${currentFYAge - 6}年生`;
+      else if (currentFYAge >= 13 && currentFYAge <= 15) classLabel = `中学${currentFYAge - 12}年生`;
+      else classLabel = '中学卒業以降';
+
+      const isInfantClass = currentFYAge <= 2;                     // 0〜1歳児クラス（クラス編成前を含む）
+      const isTwoYearOldClass = currentFYAge === 3;                // 2歳児クラス
+      const isOver3Class = currentFYAge >= 4 && currentFYAge <= 6; // 3〜5歳児クラス
+      const isSchoolAge = currentFYAge >= 7;                       // 就学年齢以上（本ツールの対象外）
+
+      // 現時点で0〜1歳児クラスの場合、参考情報として「2歳児クラスになる年度の4月1日」も算出
+      const twoYearOldClassStart = new Date(cohortYear + 3, 3, 1);
+
+      return {
+        birthDate, cohortYear, currentFYAge, classLabel,
+        man3Date, ninteiSwitchDate, hasTurnedMan3,
+        isInfantClass, isTwoYearOldClass, isOver3Class, isSchoolAge,
+        twoYearOldClassStart
+      };
     }
 
     window.calculateAgeClass = function() {
@@ -299,14 +406,22 @@
       }
       
       const birthDate = new Date(dateStr);
-      let cohortYear = birthDate.getFullYear();
-      if (birthDate.getMonth() < 3 || (birthDate.getMonth() === 3 && birthDate.getDate() === 1)) {
-        cohortYear--;
-      }
+      const cohortYear = getFiscalYearOf(birthDate);
       
+      // 年度（4月始まり）ベースの元号表示。
+      // 令和は2019年度〜、平成は1989年度〜2018年度、それより前は元号を付けない。
+      // ※厳密には令和への改元は2019年5月1日だが、行政の「年度」表記では
+      //   2019年度は令和元年度として扱われるのが一般的なため、年度単位で判定する。
       const formatYear = (y) => {
-        const wareki = y - 2018; 
-        return `${y}（令和${wareki}）年度`;
+        let eraLabel = '';
+        if (y >= 2019) {
+          const wareki = y - 2018;
+          eraLabel = `令和${wareki === 1 ? '元' : wareki}`;
+        } else if (y >= 1989) {
+          const wareki = y - 1988;
+          eraLabel = `平成${wareki === 1 ? '元' : wareki}`;
+        }
+        return eraLabel ? `${y}（${eraLabel}）年度` : `${y}年度`;
       };
       
       const schedule = [
@@ -568,28 +683,80 @@
       `;
     }
 
-    // --- Simulator & Documents Functions ---
-    function handleSimAnswer(key, value, nextStep) {
-      state.simulator.answers[key] = value;
-      state.simulator.step = nextStep;
-      
-      if (nextStep === 5) {
-        const { type, need, age, tax } = state.simulator.answers;
-        if (type === 'kindergarten') {
-          if(age === 'under2' || age === 'under3') {
-             state.simulator.resultType = 'none'; 
-          } else {
-             state.simulator.resultType = 'k1';
-          }
-        } else if (type === 'nursery' && need === 'no') {
+    // --- Simulator Functions ---
+    // Q1: 施設タイプを選択
+    function handleSimType(value) {
+      state.simulator.answers.type = value;
+      state.simulator.step = 2;
+      renderApp();
+    }
+
+    // Q2: 生年月日を入力（幼稚園・保育園フロー共通）
+    function handleBirthDateSubmit() {
+      const input = document.getElementById('sim-birthdate');
+      const errEl = document.getElementById('sim-birthdate-error');
+      const dateStr = input ? input.value : '';
+
+      if (!dateStr) {
+        if (errEl) errEl.classList.remove('hidden');
+        return;
+      }
+      if (errEl) errEl.classList.add('hidden');
+
+      state.simulator.answers.birthDate = dateStr;
+      const tl = getEnrollmentTimeline(dateStr);
+      const { type } = state.simulator.answers;
+
+      if (type === 'kindergarten') {
+        // 幼稚園ルートは生年月日だけで判定が完了する
+        if (tl.isSchoolAge) {
+          state.simulator.resultType = 'school_age';
+        } else if (tl.isOver3Class || (tl.isTwoYearOldClass && tl.hasTurnedMan3)) {
+          state.simulator.resultType = 'k1';
+        } else if (tl.isTwoYearOldClass) {
+          state.simulator.resultType = 'k_pre3';
+        } else {
           state.simulator.resultType = 'none';
-        } else if (type === 'nursery' && need === 'yes') {
-          state.simulator.resultType = 'k23';
         }
+        state.simulator.step = 5;
+      } else {
+        // 保育園ルートは「保育の必要性」の質問へ進む
+        state.simulator.step = 3;
       }
       renderApp();
     }
-    
+
+    // Q3: 保育を必要とする事由の有無（保育園ルートのみ）
+    function handleSimNeed(value) {
+      state.simulator.answers.need = value;
+      const { birthDate } = state.simulator.answers;
+      const tl = getEnrollmentTimeline(birthDate);
+
+      if (tl.isSchoolAge) {
+        state.simulator.resultType = 'school_age';
+        state.simulator.step = 5;
+      } else if (value === 'no') {
+        state.simulator.resultType = 'none';
+        state.simulator.step = 5;
+      } else if (tl.isOver3Class || (tl.isTwoYearOldClass && tl.hasTurnedMan3)) {
+        // 3〜5歳児クラス、または満3歳児は無償化の判定に税情報が影響しないため
+        // 住民税非課税世帯かどうかの質問(Q4)自体をスキップする
+        state.simulator.resultType = 'k23';
+        state.simulator.step = 5;
+      } else {
+        state.simulator.step = 4;
+      }
+      renderApp();
+    }
+
+    // Q4: 住民税非課税世帯かどうか（保育園ルート・3号認定の対象者のみ）
+    function handleSimTax(value) {
+      state.simulator.answers.tax = value;
+      state.simulator.resultType = 'k23';
+      state.simulator.step = 5;
+      renderApp();
+    }
+
     function resetSimulator() {
       state.simulator.step = 1;
       state.simulator.answers = {};
@@ -598,60 +765,110 @@
     }
 
     function getSimResultHTML() {
-      const { type, need, age, tax } = state.simulator.answers;
-      
-      if (type === 'kindergarten') {
-        if(age === 'under2' || age === 'under3') {
-           return `
-             <div class="bg-white border-2 border-gray-200 p-6 rounded-xl shadow-sm text-center">
-               <i data-lucide="alert-triangle" class="h-12 w-12 text-yellow-500 mx-auto mb-3"></i>
-               <h3 class="text-xl font-bold text-gray-800 mb-4">幼稚園等の利用基準を満たしていません</h3>
-               <p class="text-gray-700 text-left">
-                 幼稚園や認定こども園（教育枠）の利用は、満3歳以上（3歳児クラスから）が対象となります。<br/>
-                 年齢に達していない場合は、保育を必要とする事由がある場合の保育枠利用、または一時預かり事業の利用をご検討ください。
-               </p>
-               <div class="mt-4">
-                 <button onclick="switchTab('services')" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition bg-blue-50 px-4 py-2 rounded border border-blue-200 shadow-sm">
-                   <i data-lucide="heart-handshake" class="h-4 w-4 mr-1.5"></i> その他の行政支援を見る
-                 </button>
-               </div>
-             </div>
-           `;
-        }
-         return `
-           <div class="bg-white border-2 border-blue-200 p-6 rounded-xl shadow-sm text-center">
-             <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-bold mb-3">判定結果</span>
-             <h3 class="text-3xl font-black text-gray-800 mb-4">1号認定</h3>
-             <p class="text-gray-700">幼稚園や認定こども園（教育枠）の利用が可能です。</p>
-             <div class="mt-6 p-4 bg-green-50 rounded-lg text-left">
-               <h4 class="font-bold text-green-800 flex items-center mb-2"><i data-lucide="check-square" class="h-4 w-4 mr-2"></i> 幼児教育・保育の無償化について</h4>
-               <p class="text-sm text-gray-700">満3歳になった翌月から認定可能。幼児教育無償化の対象（ただし、給食費などの実費は発生します※各施設によって異なります）です。</p>
-             </div>
-           </div>
-         `;
-      }
-      
-      if (type === 'nursery' && need === 'no') {
-         return `
-           <div class="bg-white border-2 border-gray-200 p-6 rounded-xl shadow-sm text-center">
-             <i data-lucide="alert-triangle" class="h-12 w-12 text-yellow-500 mx-auto mb-3"></i>
-             <h3 class="text-xl font-bold text-gray-800 mb-4">保育園等の利用基準を満たしていません</h3>
-             <p class="text-gray-700 text-left">
-               保育園や認定こども園（保育枠）を利用するには、就労や病気など「保育を必要とする事由」が必要です。<br/>
-               幼稚園や認定こども園（教育枠）の利用、または一時預かり事業の利用をご検討ください。
-             </p>
-             <div class="mt-4">
-               <button onclick="switchTab('services')" class="inline-flex items-center text-sm font-medium text-orange-600 hover:text-orange-800 transition bg-orange-50 px-4 py-2 rounded border border-orange-200 shadow-sm">
-                 <i data-lucide="heart-handshake" class="h-4 w-4 mr-1.5"></i> その他の行政支援を見る
-               </button>
-             </div>
-           </div>
-         `;
+      const { type, birthDate, tax } = state.simulator.answers;
+      const resultType = state.simulator.resultType;
+      const tl = birthDate ? getEnrollmentTimeline(birthDate) : null;
+
+      // 共通：入力された生年月日がすでに就学年齢の場合
+      if (resultType === 'school_age') {
+        return `
+          <div class="bg-white border-2 border-gray-200 p-6 rounded-xl shadow-sm text-center">
+            <i data-lucide="info" class="h-12 w-12 text-blue-500 mx-auto mb-3"></i>
+            <h3 class="text-xl font-bold text-gray-800 mb-4">入力された生年月日はすでに就学年齢です</h3>
+            <p class="text-gray-700 text-left">
+              本ツールは未就学児（0〜5歳児クラス）の入園・入所判定を対象としています。<br/>
+              小学校入学や学童保育については「施設・学校一覧」「入園・入学・利用の手続き」タブの小中学校・学童保育のページをご確認ください。
+            </p>
+          </div>
+        `;
       }
 
-      if (type === 'nursery' && need === 'yes') {
-         if (age === 'over3') {
-           return `
+      if (type === 'kindergarten') {
+        // 0〜1歳児クラス：教育枠は現時点で完全に対象外
+        if (resultType === 'none') {
+          return `
+            <div class="bg-white border-2 border-gray-200 p-6 rounded-xl shadow-sm text-center">
+              <i data-lucide="alert-triangle" class="h-12 w-12 text-yellow-500 mx-auto mb-3"></i>
+              <h3 class="text-xl font-bold text-gray-800 mb-4">現時点では幼稚園等（1号認定）の対象ではありません</h3>
+              <p class="text-gray-700 text-left mb-4">
+                幼稚園や認定こども園（教育枠）の利用は、原則として満3歳の誕生日を迎えた翌月からが対象です。<br/>
+                年齢に達するまでは、保育を必要とする事由がある場合の保育枠利用、または一時預かり事業の利用をご検討ください。
+              </p>
+              <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 text-left">
+                <h4 class="font-bold text-blue-800 text-sm mb-2 flex items-center"><i data-lucide="calendar" class="h-4 w-4 mr-1.5"></i> 今後の見込み</h4>
+                <p class="text-sm text-gray-700">
+                  ${formatYearMonthJp(tl.twoYearOldClassStart)}頃に2歳児クラスとなり、<strong>${formatDateJp(tl.man3Date)}に3歳の誕生日</strong>を迎えます。その翌月の<strong>${formatYearMonthJp(tl.ninteiSwitchDate)}から1号認定の対象</strong>になる見込みです。
+                </p>
+              </div>
+              <div class="mt-4">
+                <button onclick="switchTab('services')" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition bg-blue-50 px-4 py-2 rounded border border-blue-200 shadow-sm">
+                  <i data-lucide="heart-handshake" class="h-4 w-4 mr-1.5"></i> その他の行政支援を見る
+                </button>
+              </div>
+            </div>
+          `;
+        }
+        // 2歳児クラスで、まだ3歳の誕生日を迎えていない
+        if (resultType === 'k_pre3') {
+          return `
+            <div class="bg-white border-2 border-gray-200 p-6 rounded-xl shadow-sm text-center">
+              <i data-lucide="alert-triangle" class="h-12 w-12 text-yellow-500 mx-auto mb-3"></i>
+              <h3 class="text-xl font-bold text-gray-800 mb-4">幼稚園等（1号認定）の対象年齢にまだ達していません</h3>
+              <p class="text-gray-700 text-left mb-4">
+                幼稚園や認定こども園（教育枠）の利用は、原則として満3歳の誕生日を迎えた翌月からが対象です。<br/>
+                ただし、園によっては「プレ保育」「未就園児クラス」等の名称で、2歳児を対象とした有料の保育・教育サービスを独自に実施している場合があります。詳しくは入園を希望する幼稚園へ直接お問い合わせください。
+              </p>
+              <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 text-left">
+                <h4 class="font-bold text-blue-800 text-sm mb-2 flex items-center"><i data-lucide="calendar" class="h-4 w-4 mr-1.5"></i> 今後の見込み</h4>
+                <p class="text-sm text-gray-700">
+                  <strong>${formatDateJp(tl.man3Date)}に3歳の誕生日</strong>を迎えます。その翌月の<strong>${formatYearMonthJp(tl.ninteiSwitchDate)}から1号認定の対象</strong>になります。
+                </p>
+              </div>
+              <div class="mt-4">
+                <button onclick="switchTab('services')" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition bg-blue-50 px-4 py-2 rounded border border-blue-200 shadow-sm">
+                  <i data-lucide="heart-handshake" class="h-4 w-4 mr-1.5"></i> その他の行政支援を見る
+                </button>
+              </div>
+            </div>
+          `;
+        }
+        // k1: 3〜5歳児クラス、または満3歳児（2歳児クラスだが3歳の誕生日を迎えた）
+        const isMan3 = tl.isTwoYearOldClass && tl.hasTurnedMan3;
+        return `
+          <div class="bg-white border-2 border-blue-200 p-6 rounded-xl shadow-sm text-center">
+            <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-bold mb-3">判定結果</span>
+            <h3 class="text-3xl font-black text-gray-800 mb-4">1号認定</h3>
+            <p class="text-gray-700">幼稚園や認定こども園（教育枠）の利用が可能です。</p>
+            <div class="mt-6 p-4 bg-green-50 rounded-lg text-left">
+              <h4 class="font-bold text-green-800 flex items-center mb-2"><i data-lucide="check-square" class="h-4 w-4 mr-2"></i> 幼児教育・保育の無償化について</h4>
+              <p class="text-sm text-gray-700">${isMan3 ? `${formatDateJp(tl.man3Date)}（満3歳の誕生日）の翌月、${formatYearMonthJp(tl.ninteiSwitchDate)}から1号認定の対象となり、同時に幼児教育無償化の対象にもなります。` : '3歳児クラス以上のため、幼児教育無償化の対象です。'}（ただし、給食費などの実費は発生します※各施設によって異なります）</p>
+            </div>
+          </div>
+        `;
+      }
+
+      if (type === 'nursery') {
+        if (resultType === 'none') {
+          return `
+            <div class="bg-white border-2 border-gray-200 p-6 rounded-xl shadow-sm text-center">
+              <i data-lucide="alert-triangle" class="h-12 w-12 text-yellow-500 mx-auto mb-3"></i>
+              <h3 class="text-xl font-bold text-gray-800 mb-4">保育園等の利用基準を満たしていません</h3>
+              <p class="text-gray-700 text-left">
+                保育園や認定こども園（保育枠）を利用するには、就労や病気など「保育を必要とする事由」が必要です。<br/>
+                幼稚園や認定こども園（教育枠）の利用、または一時預かり事業の利用をご検討ください。
+              </p>
+              <div class="mt-4">
+                <button onclick="switchTab('services')" class="inline-flex items-center text-sm font-medium text-orange-600 hover:text-orange-800 transition bg-orange-50 px-4 py-2 rounded border border-orange-200 shadow-sm">
+                  <i data-lucide="heart-handshake" class="h-4 w-4 mr-1.5"></i> その他の行政支援を見る
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        // k23: 保育を必要とする事由あり
+        if (tl.isOver3Class) {
+          return `
             <div class="bg-white border-2 border-orange-200 p-6 rounded-xl shadow-sm text-center">
               <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold mb-3">判定結果</span>
               <h3 class="text-3xl font-black text-gray-800 mb-4">2号認定</h3>
@@ -663,55 +880,65 @@
                 </ul>
               </div>
             </div>
-           `;
-         } else if (age === 'under3') {
-           return `
+          `;
+        }
+        if (tl.isTwoYearOldClass && tl.hasTurnedMan3) {
+          return `
             <div class="bg-white border-2 border-orange-200 p-6 rounded-xl shadow-sm text-center">
               <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold mb-3">判定結果</span>
               <h3 class="text-3xl font-black text-gray-800 mb-4">2号認定</h3>
               <p class="text-gray-700">保育園や認定こども園（保育枠）の利用が可能です。</p>
               <div class="mt-6 p-4 bg-gray-50 rounded-lg text-left border border-gray-200">
                 <h4 class="font-bold text-gray-800 flex items-center mb-2"><i data-lucide="info" class="h-4 w-4 mr-2"></i> 保育料について</h4>
-                <p class="text-sm text-gray-700">満3歳に達したため2号認定となりますが、クラス年齢としては2歳児クラスとなるため幼児教育無償化の対象外であり、保護者の所得（住民税額）に応じた行政の定める保育料が発生します。</p>
+                <p class="text-sm text-gray-700">${formatDateJp(tl.man3Date)}に3歳の誕生日を迎えたため2号認定となりますが、クラス年齢としては2歳児クラスとなるため幼児教育無償化の対象外であり、保護者の所得（住民税額）に応じた行政の定める保育料が発生します。</p>
                 <p class="text-xs text-gray-600 mt-2 p-2 bg-yellow-50 rounded">
                   ★令和6年9月より、遠賀町独自に多子世帯等の保育料軽減が拡大されています。詳しくは基準額表をご確認ください。
                 </p>
               </div>
             </div>
-           `;
-         } else if (age === 'under2') {
-           if (tax === 'yes') {
-              return `
-                <div class="bg-white border-2 border-orange-200 p-6 rounded-xl shadow-sm text-center">
-                  <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold mb-3">判定結果</span>
-                  <h3 class="text-3xl font-black text-gray-800 mb-4">3号認定</h3>
-                  <p class="text-gray-700">保育園や認定こども園（保育枠）、事業所内保育所等の利用が可能です。</p>
-                  <div class="mt-6 p-4 bg-green-50 rounded-lg text-left">
-                    <h4 class="font-bold text-green-800 flex items-center mb-2"><i data-lucide="check-square" class="h-4 w-4 mr-2"></i> 幼児教育・保育の無償化について</h4>
-                    <p class="text-sm text-gray-700">住民税非課税世帯のため、無償化の対象（新3号認定）となります。</p>
-                  </div>
-                </div>
-             `;
-           } else {
-              return `
-                <div class="bg-white border-2 border-orange-200 p-6 rounded-xl shadow-sm text-center">
-                  <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold mb-3">判定結果</span>
-                  <h3 class="text-3xl font-black text-gray-800 mb-4">3号認定</h3>
-                  <p class="text-gray-700 mb-4">保育園や認定こども園（保育枠）、事業所内保育所等の利用が可能です。</p>
-                  <div class="mt-6 p-4 bg-gray-50 rounded-lg text-left border border-gray-200">
-                    <h4 class="font-bold text-gray-800 flex items-center mb-2"><i data-lucide="info" class="h-4 w-4 mr-2"></i> 保育料について</h4>
-                    <p class="text-sm text-gray-700">無償化の対象外です。保護者の所得（住民税額）に応じた保育料が発生します。</p>
-                    <p class="text-xs text-gray-600 mt-2 p-2 bg-yellow-50 rounded">
-                      ★令和6年9月より、遠賀町独自に多子世帯等の保育料軽減が拡大されています。詳しくは基準額表をご確認ください。
-                    </p>
-                  </div>
-                </div>
-             `;
-           }
-         }
+          `;
+        }
+
+        // isInfantClass、または（isTwoYearOldClass かつ 満3歳未満）：3号認定
+        const futureNote = `
+          <p class="text-xs text-gray-600 mt-3 p-2 bg-blue-50 rounded">
+            今後、<strong>${formatDateJp(tl.man3Date)}（満3歳の誕生日）の翌月、${formatYearMonthJp(tl.ninteiSwitchDate)}から2号認定に切り替わります。</strong>
+          </p>
+        `;
+        if (tax === 'yes') {
+          return `
+            <div class="bg-white border-2 border-orange-200 p-6 rounded-xl shadow-sm text-center">
+              <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold mb-3">判定結果</span>
+              <h3 class="text-3xl font-black text-gray-800 mb-4">3号認定</h3>
+              <p class="text-gray-700">保育園や認定こども園（保育枠）、事業所内保育所等の利用が可能です。</p>
+              <div class="mt-6 p-4 bg-green-50 rounded-lg text-left">
+                <h4 class="font-bold text-green-800 flex items-center mb-2"><i data-lucide="check-square" class="h-4 w-4 mr-2"></i> 幼児教育・保育の無償化について</h4>
+                <p class="text-sm text-gray-700">住民税非課税世帯のため、無償化の対象（新3号認定）となります。</p>
+                ${futureNote}
+              </div>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="bg-white border-2 border-orange-200 p-6 rounded-xl shadow-sm text-center">
+              <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold mb-3">判定結果</span>
+              <h3 class="text-3xl font-black text-gray-800 mb-4">3号認定</h3>
+              <p class="text-gray-700 mb-4">保育園や認定こども園（保育枠）、事業所内保育所等の利用が可能です。</p>
+              <div class="mt-6 p-4 bg-gray-50 rounded-lg text-left border border-gray-200">
+                <h4 class="font-bold text-gray-800 flex items-center mb-2"><i data-lucide="info" class="h-4 w-4 mr-2"></i> 保育料について</h4>
+                <p class="text-sm text-gray-700">無償化の対象外です。保護者の所得（住民税額）に応じた保育料が発生します。</p>
+                <p class="text-xs text-gray-600 mt-2 p-2 bg-yellow-50 rounded">
+                  ★令和6年9月より、遠賀町独自に多子世帯等の保育料軽減が拡大されています。詳しくは基準額表をご確認ください。
+                </p>
+                ${futureNote}
+              </div>
+            </div>
+          `;
+        }
       }
       return '';
     }
+
 
     function getSimulatorSectionHTML() {
       let content = '';
@@ -722,44 +949,42 @@
           <div class="animate-fade-in w-full">
             <h4 class="text-base font-bold text-gray-800 mb-3">Q1. 希望する施設はどちらですか？</h4>
             <div class="space-y-2 w-full">
-              <button onclick="handleSimAnswer('type', 'kindergarten', 5)" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+              <button onclick="handleSimType('kindergarten')" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
                 <span>幼稚園・認定こども園（教育枠）</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
               </button>
-              <button onclick="handleSimAnswer('type', 'nursery', 2)" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+              <button onclick="handleSimType('nursery')" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
                 <span>保育園・認定こども園（保育枠）等</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
               </button>
             </div>
           </div>
         `;
       } else if (step === 2) {
+        // 幼稚園・保育園どちらのルートでも共通の、生年月日入力ステップ。
+        // 「2歳以下」等のボタン選択に頼ると学年と年齢を混同しやすいため、
+        // 生年月日から学年・満3歳のタイミングをシステム側で正確に計算する。
+        const savedDate = state.simulator.answers.birthDate || '';
         content = `
           <div class="animate-fade-in w-full">
-            <h4 class="text-base font-bold text-gray-800 mb-1">Q2. 保育を必要とする事由がありますか？</h4>
-            <p class="text-xs text-gray-500 mb-3">※月60時間以上の就労、病気、介護、求職活動、妊娠・出産などが該当します。</p>
-            <div class="space-y-2 w-full">
-              <button onclick="handleSimAnswer('need', 'yes', 3)" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
-                <span>はい（該当する）</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
-              </button>
-              <button onclick="handleSimAnswer('need', 'no', 5)" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
-                <span>いいえ（該当しない）</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
-              </button>
-            </div>
+            <h4 class="text-base font-bold text-gray-800 mb-1">Q2. お子様の生年月日を入力してください</h4>
+            <p class="text-xs text-gray-500 mb-3">※まだ生まれていないお子様の場合は、出産予定日でも構いません。</p>
+            <input type="date" id="sim-birthdate" value="${savedDate}" class="w-full max-w-[220px] p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition bg-white text-sm">
+            <p id="sim-birthdate-error" class="hidden text-red-600 text-xs font-bold mt-2 flex items-center"><i data-lucide="alert-circle" class="h-3.5 w-3.5 mr-1"></i>生年月日を入力してください。</p>
+            <button onclick="handleBirthDateSubmit()" class="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition flex justify-center items-center">
+              次へ <i data-lucide="chevron-right" class="h-4 w-4 ml-1"></i>
+            </button>
           </div>
         `;
       } else if (step === 3) {
         content = `
           <div class="animate-fade-in w-full">
-            <h4 class="text-base font-bold text-gray-800 mb-1">Q3. 現在の、お子様の年齢は？</h4>
-            <p class="text-xs text-gray-500 mb-3">※年度途中で誕生日を迎えても、その年度中はクラス年齢は変わりません。</p>
+            <h4 class="text-base font-bold text-gray-800 mb-1">Q3. 保育を必要とする事由がありますか？</h4>
+            <p class="text-xs text-gray-500 mb-3">※月60時間以上の就労、病気、介護、求職活動、妊娠・出産などが該当します。</p>
             <div class="space-y-2 w-full">
-              <button onclick="handleSimAnswer('age', 'over3', 5)" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
-                <span>3歳以上（3〜5歳児クラス）</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
+              <button onclick="handleSimNeed('yes')" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+                <span>はい（該当する）</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
               </button>
-              <button onclick="handleSimAnswer('age', 'under3', 4)" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
-                <span>満3歳（2歳児クラスだが、3歳の誕生日を迎えた）</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
-              </button>
-              <button onclick="handleSimAnswer('age', 'under2', 4)" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
-                <span>2歳以下（0〜2歳児クラスで、まだ3歳になっていない）</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
+              <button onclick="handleSimNeed('no')" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+                <span>いいえ（該当しない）</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
               </button>
             </div>
           </div>
@@ -769,10 +994,10 @@
           <div class="animate-fade-in w-full">
             <h4 class="text-base font-bold text-gray-800 mb-2">Q4. 世帯全員が住民税非課税ですか？</h4>
             <div class="space-y-2 w-full">
-              <button onclick="handleSimAnswer('tax', 'yes', 5)" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+              <button onclick="handleSimTax('yes')" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
                 <span>はい（非課税世帯）</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
               </button>
-              <button onclick="handleSimAnswer('tax', 'no', 5)" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
+              <button onclick="handleSimTax('no')" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
                 <span>いいえ（課税世帯・わからない）</span><i data-lucide="chevron-right" class="h-4 w-4 text-gray-400"></i>
               </button>
             </div>
@@ -782,11 +1007,6 @@
         content = `
           <div class="animate-fade-in w-full">
             ${getSimResultHTML()}
-            <div class="mt-4 text-center">
-              <button onclick="resetSimulator()" class="text-sm text-orange-600 font-medium hover:underline">
-                条件を変えてもう一度判定する
-              </button>
-            </div>
           </div>
         `;
       }
@@ -809,15 +1029,18 @@
           <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4 md:p-6 w-full">
             ${content}
           </div>
+
+          ${step > 1 ? `
+            <div class="mt-4 text-center">
+              <button onclick="resetSimulator()" class="inline-flex items-center gap-1.5 text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 px-5 py-2.5 rounded-full shadow-md transition">
+                <i data-lucide="rotate-ccw" class="h-4 w-4"></i> 判定をはじめからやり直す
+              </button>
+            </div>
+          ` : ''}
         </div>
       `;
     }
 
-    function toggleDocCheck(id) {
-      state.docs.checkedItems[id] = !state.docs.checkedItems[id];
-      renderApp();
-    }
-    
     function updateFamilyType(type) {
       state.docs.familyType = type;
       renderApp();
@@ -830,25 +1053,15 @@
     }
 
     function getDocumentsSectionHTML() {
-      const getCheckSvg = (isChecked) => isChecked ? `<svg class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>` : '';
-      
-      const renderItems = (items) => items.map(item => {
-        const isChecked = !!state.docs.checkedItems[item.id];
-        return `
-          <div 
-            class="p-4 flex items-start cursor-pointer transition-colors ${isChecked ? 'bg-orange-50/50' : 'hover:bg-gray-50'}"
-            onclick="toggleDocCheck('${item.id}')"
-          >
-            <div class="mt-0.5 mr-3 flex-shrink-0 h-5 w-5 rounded border flex items-center justify-center ${isChecked ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}">
-              ${getCheckSvg(isChecked)}
-            </div>
-            <div>
-              <p class="font-medium ${isChecked ? 'text-gray-800 line-through decoration-gray-400' : 'text-gray-800'}">${item.label}</p>
-              <p class="text-sm text-gray-500 mt-1">${item.desc}</p>
-            </div>
+      const renderItems = (items) => items.map(item => `
+        <div class="p-4 flex items-start">
+          <i data-lucide="file-text" class="h-5 w-5 mr-3 mt-0.5 flex-shrink-0 text-orange-400"></i>
+          <div>
+            <p class="font-medium text-gray-800">${item.label}</p>
+            <p class="text-sm text-gray-500 mt-1">${item.desc}</p>
           </div>
-        `;
-      }).join('');
+        </div>
+      `).join('');
 
       const renderStatusOptions = (currentVal) => statusOptions.map(opt => 
         `<option value="${opt}" ${currentVal === opt ? 'selected' : ''}>${opt || '選択してください'}</option>`
@@ -858,9 +1071,9 @@
         <div class="mt-12 pt-8 border-t-2 border-dashed border-gray-300 animate-fade-in w-full">
           <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center">
             <i data-lucide="file-check-2" class="mr-2 h-6 w-6 text-orange-600"></i>
-            入所に必要な書類チェック
+            入所に必要な書類一覧
           </h3>
-          <p class="text-sm text-gray-600 mb-6">状況に合わせて必要な書類を確認してください。タップでチェックマークを付けられます。</p>
+          <p class="text-sm text-gray-600 mb-6">状況に合わせて必要な書類をご確認ください。</p>
           
           <div class="space-y-6 w-full">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -1330,7 +1543,7 @@
       const listContainer = document.getElementById('classes-list-container');
       if(listContainer) {
         listContainer.innerHTML = generateClassesListHTML();
-        lucide.createIcons();
+        renderLucideIcons();
       }
     };
 
@@ -1352,28 +1565,32 @@
       return filtered.map(c => {
         let contactHTML = '';
         if (c.phone) {
-          contactHTML += `<a href="tel:${c.phone.replace(/-/g, '')}" class="inline-flex items-center text-orange-600 hover:underline mr-4"><i data-lucide="phone" class="h-3.5 w-3.5 mr-1"></i>${c.phone}</a>`;
+          const safeTel = sanitizePhoneForHref(c.phone);
+          contactHTML += `<a href="tel:${safeTel}" class="inline-flex items-center text-orange-600 hover:underline mr-4"><i data-lucide="phone" class="h-3.5 w-3.5 mr-1"></i>${escapeHtml(c.phone)}</a>`;
         }
         if (c.link) {
-          contactHTML += `<a href="${c.link.startsWith('http') ? c.link : 'https://' + c.link}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-blue-600 hover:underline break-all"><i data-lucide="external-link" class="h-3.5 w-3.5 mr-1"></i>${c.link.includes('instagram.com') ? 'Instagramを見る' : 'WEBサイトを見る'}</a>`;
+          const safeUrl = sanitizeUrl(c.link);
+          if (safeUrl) {
+            contactHTML += `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-blue-600 hover:underline break-all"><i data-lucide="external-link" class="h-3.5 w-3.5 mr-1"></i>${safeUrl.includes('instagram.com') ? 'Instagramを見る' : 'WEBサイトを見る'}</a>`;
+          }
         }
 
         return `
         <div class="bg-white border border-gray-200 p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col">
           <div class="flex justify-between items-start mb-3">
-            <h3 class="text-lg font-bold text-gray-800">${c.name || '名称未設定'}</h3>
-            <span class="text-xs font-semibold px-2 py-1 bg-green-100 text-green-800 rounded-full whitespace-nowrap ml-2">${c.category || ''}</span>
+            <h3 class="text-lg font-bold text-gray-800">${escapeHtml(c.name) || '名称未設定'}</h3>
+            <span class="text-xs font-semibold px-2 py-1 bg-green-100 text-green-800 rounded-full whitespace-nowrap ml-2">${escapeHtml(c.category)}</span>
           </div>
           <div class="space-y-2 text-sm text-gray-600 flex-grow">
-            <p class="flex items-start"><i data-lucide="user" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> <span>対象: ${c.target || '-'}</span></p>
+            <p class="flex items-start"><i data-lucide="user" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> <span>対象: ${escapeHtml(c.target) || '-'}</span></p>
             <div class="flex items-start">
               <i data-lucide="map-pin" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> 
               <div>
-                <span>${c.location || '-'}</span><br>
+                <span>${escapeHtml(c.location) || '-'}</span><br>
                 ${c.address ? `<a href="https://maps.google.com/?q=${encodeURIComponent('福岡県遠賀郡遠賀町' + c.address)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:underline inline-flex items-center mt-0.5"><i data-lucide="map" class="h-3 w-3 mr-0.5"></i>地図を見る</a>` : ''}
               </div>
             </div>
-            <p class="flex items-start"><i data-lucide="clock" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> <span>日時: ${c.schedule || '-'}</span></p>
+            <p class="flex items-start"><i data-lucide="clock" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> <span>日時: ${escapeHtml(c.schedule) || '-'}</span></p>
           </div>
           <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center text-sm">
             ${contactHTML}
@@ -1446,7 +1663,7 @@
             <input 
               type="text" 
               id="class-search-input" 
-              value="${state.classesSearch.keyword}" 
+              value="${escapeHtml(state.classesSearch.keyword)}" 
               oninput="handleClassSearch(this.value)" 
               placeholder="教室名、カテゴリ、場所などで検索..." 
               class="w-full bg-transparent outline-none text-sm text-gray-800 placeholder-gray-400"
@@ -1633,23 +1850,35 @@
 
     // --- 初期化 ---
     window.addEventListener('DOMContentLoaded', () => {
-      // スプレッドシートURLが設定されている場合はCSVデータを取得
-      if (SPREADSHEET_CSV_URL) {
-        Papa.parse(SPREADSHEET_CSV_URL, {
-          download: true,
-          header: true,
-          complete: function(results) {
-            // 空の行（nameが空）を除外してデータをセット
-            kidsClasses = results.data.filter(row => row.name && row.name.trim() !== '');
-            renderApp();
-          },
-          error: function(err) {
-            console.error("CSV読み込みエラー:", err);
-            // 失敗時は内蔵のサンプルデータをそのまま使用して描画
-            renderApp();
-          }
-        });
+      // スプレッドシートURLが設定されている場合はCSVデータを取得。
+      // ただし cdnjs.cloudflare.com からの PapaParse 本体の読み込みに失敗すると
+      // `Papa` 自体が未定義となり、Papa.parse(...) の呼び出し自体が例外を投げて
+      // renderApp() が一度も呼ばれず画面が真っ白になる問題があったため、
+      // typeof チェックと try/catch で必ず renderApp() に到達するようにする。
+      if (SPREADSHEET_CSV_URL && typeof Papa !== 'undefined') {
+        try {
+          Papa.parse(SPREADSHEET_CSV_URL, {
+            download: true,
+            header: true,
+            complete: function(results) {
+              // 空の行（nameが空）を除外してデータをセット
+              kidsClasses = results.data.filter(row => row.name && row.name.trim() !== '');
+              renderApp();
+            },
+            error: function(err) {
+              console.error("CSV読み込みエラー:", err);
+              // 失敗時は内蔵のサンプルデータをそのまま使用して描画
+              renderApp();
+            }
+          });
+        } catch (e) {
+          console.error("PapaParseの実行中にエラーが発生しました。内蔵の教室サンプルデータで表示します:", e);
+          renderApp();
+        }
       } else {
+        if (SPREADSHEET_CSV_URL) {
+          console.error("PapaParseライブラリが読み込めませんでした（CDN障害等の可能性）。内蔵の教室サンプルデータで表示します。");
+        }
         renderApp();
       }
     });
