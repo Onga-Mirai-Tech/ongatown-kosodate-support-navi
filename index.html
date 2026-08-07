@@ -66,10 +66,10 @@
       <h1 class="text-xl font-bold flex items-center cursor-pointer no-select" onclick="switchTab('home')">
         <i data-lucide="baby" class="mr-2 h-6 w-6"></i>
         遠賀町 子育て支援ナビ
-        <span class="ml-3 px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm hidden sm:inline-block">v2.0.1</span>
+        <span class="ml-3 px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm hidden sm:inline-block">v2.0.2</span>
       </h1>
       <div class="flex items-center gap-2">
-        <span class="px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm sm:hidden">v2.0.1</span>
+        <span class="px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm sm:hidden">v2.0.2</span>
         <a href="https://www.town.onga.lg.jp/life/3/" target="_blank" rel="noopener noreferrer" class="text-xs flex items-center bg-orange-600 px-3 py-1.5 rounded-full hover:bg-orange-700 transition no-select">
           町公式HP <i data-lucide="external-link" class="ml-1 h-3 w-3"></i>
         </a>
@@ -397,8 +397,65 @@
       };
     }
 
+    // --- 生年月日プルダウン（年・月・日）の共通ヘルパー ---
+    // カレンダーUIでの直接入力がしづらい端末（特にスマートフォン）でも
+    // 数字を選ぶだけで入力できるよう、年・月・日を独立したプルダウンにする。
+    function getDaysInMonth(year, month) {
+      // month: 1〜12。年・月が未選択の場合は31日まで許容しておく
+      if (!year || !month) return 31;
+      return new Date(Number(year), Number(month), 0).getDate();
+    }
+
+    function generateYearOptionsHTML(selectedYear) {
+      const currentYear = new Date().getFullYear();
+      const startYear = currentYear + 1; // 出産予定日の入力も考慮し1年先まで許容
+      const endYear = currentYear - 20;  // 中学卒業前後までを想定した範囲
+      let options = `<option value="">年</option>`;
+      for (let y = startYear; y >= endYear; y--) {
+        options += `<option value="${y}" ${String(y) === String(selectedYear) ? 'selected' : ''}>${y}</option>`;
+      }
+      return options;
+    }
+
+    function generateMonthOptionsHTML(selectedMonth) {
+      let options = `<option value="">月</option>`;
+      for (let m = 1; m <= 12; m++) {
+        options += `<option value="${m}" ${String(m) === String(selectedMonth) ? 'selected' : ''}>${m}</option>`;
+      }
+      return options;
+    }
+
+    function generateDayOptionsHTML(selectedYear, selectedMonth, selectedDay) {
+      const maxDay = getDaysInMonth(selectedYear, selectedMonth);
+      let options = `<option value="">日</option>`;
+      for (let d = 1; d <= maxDay; d++) {
+        options += `<option value="${d}" ${String(d) === String(selectedDay) ? 'selected' : ''}>${d}</option>`;
+      }
+      return options;
+    }
+
+    // 年・月・日3つのプルダウンから 'YYYY-MM-DD' 形式の文字列を組み立てる。
+    // いずれかが未選択の場合は null を返す。
+    function readDateFromSelects(yearId, monthId, dayId) {
+      const y = document.getElementById(yearId).value;
+      const m = document.getElementById(monthId).value;
+      const d = document.getElementById(dayId).value;
+      if (!y || !m || !d) return null;
+      return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+
+    // 年または月が変更されたとき、日のプルダウンの選択肢数（28〜31日）を
+    // 実際のカレンダーに合わせて更新する（うるう年の2月なども正しく反映）
+    function refreshDayOptions(yearId, monthId, dayId) {
+      const y = document.getElementById(yearId).value;
+      const m = document.getElementById(monthId).value;
+      const daySelect = document.getElementById(dayId);
+      const currentDay = daySelect.value;
+      daySelect.innerHTML = generateDayOptionsHTML(y, m, currentDay);
+    }
+
     window.calculateAgeClass = function() {
-      const dateStr = document.getElementById('childBirthDate').value;
+      const dateStr = readDateFromSelects('childBirthYear', 'childBirthMonth', 'childBirthDay');
       const resultDiv = document.getElementById('ageClassResult');
       if (!dateStr) {
         resultDiv.innerHTML = `<div class="p-4 bg-gray-50 rounded-lg border border-gray-100 text-center h-full flex items-center justify-center"><span class="text-sm text-gray-400">生年月日を選択すると、<br/>0歳児から中学校入学までの<br/>スケジュール早見表が表示されます</span></div>`;
@@ -504,8 +561,20 @@
               <!-- 横幅を調整し、Z-indexを高くしてカレンダーが隠れないようにする -->
               <div class="w-full md:w-5/12 lg:w-1/3 relative z-20">
                 <label class="block text-xs text-gray-600 mb-1 font-bold">生年月日を入力してください</label>
-                <!-- input要素の幅を少し抑える -->
-                <input type="date" id="childBirthDate" onchange="calculateAgeClass()" class="w-full max-w-[200px] p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition relative z-20 bg-white">
+                <div class="flex items-center gap-1 flex-wrap">
+                  <select id="childBirthYear" onchange="refreshDayOptions('childBirthYear','childBirthMonth','childBirthDay'); calculateAgeClass();" class="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition bg-white text-sm">
+                    ${generateYearOptionsHTML('')}
+                  </select>
+                  <span class="text-xs text-gray-500">年</span>
+                  <select id="childBirthMonth" onchange="refreshDayOptions('childBirthYear','childBirthMonth','childBirthDay'); calculateAgeClass();" class="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition bg-white text-sm">
+                    ${generateMonthOptionsHTML('')}
+                  </select>
+                  <span class="text-xs text-gray-500">月</span>
+                  <select id="childBirthDay" onchange="calculateAgeClass()" class="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition bg-white text-sm">
+                    ${generateDayOptionsHTML('', '', '')}
+                  </select>
+                  <span class="text-xs text-gray-500">日</span>
+                </div>
                 <p class="text-[10px] text-gray-500 mt-2">※お子様の生年月日から、小学校1年生から中学3年生までを1年ごとに計算して表示しています。</p>
               </div>
               <div id="ageClassResult" class="w-full md:w-7/12 lg:w-2/3 min-h-[100px] relative z-10">
@@ -693,9 +762,8 @@
 
     // Q2: 生年月日を入力（幼稚園・保育園フロー共通）
     function handleBirthDateSubmit() {
-      const input = document.getElementById('sim-birthdate');
       const errEl = document.getElementById('sim-birthdate-error');
-      const dateStr = input ? input.value : '';
+      const dateStr = readDateFromSelects('sim-birth-year', 'sim-birth-month', 'sim-birth-day');
 
       if (!dateStr) {
         if (errEl) errEl.classList.remove('hidden');
@@ -963,12 +1031,34 @@
         // 幼稚園・保育園どちらのルートでも共通の、生年月日入力ステップ。
         // 「2歳以下」等のボタン選択に頼ると学年と年齢を混同しやすいため、
         // 生年月日から学年・満3歳のタイミングをシステム側で正確に計算する。
+        // スマートフォンのカレンダーピッカーだと直接入力しづらいため、
+        // 年・月・日を独立したプルダウンにしている。
         const savedDate = state.simulator.answers.birthDate || '';
+        let savedYear = '', savedMonth = '', savedDay = '';
+        if (savedDate) {
+          const parts = savedDate.split('-');
+          savedYear = parts[0];
+          savedMonth = String(parseInt(parts[1], 10));
+          savedDay = String(parseInt(parts[2], 10));
+        }
         content = `
           <div class="animate-fade-in w-full">
             <h4 class="text-base font-bold text-gray-800 mb-1">Q2. お子様の生年月日を入力してください</h4>
             <p class="text-xs text-gray-500 mb-3">※まだ生まれていないお子様の場合は、出産予定日でも構いません。</p>
-            <input type="date" id="sim-birthdate" value="${savedDate}" class="w-full max-w-[220px] p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition bg-white text-sm">
+            <div class="flex items-center gap-1 flex-wrap">
+              <select id="sim-birth-year" onchange="refreshDayOptions('sim-birth-year','sim-birth-month','sim-birth-day')" class="p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition bg-white text-sm">
+                ${generateYearOptionsHTML(savedYear)}
+              </select>
+              <span class="text-xs text-gray-500">年</span>
+              <select id="sim-birth-month" onchange="refreshDayOptions('sim-birth-year','sim-birth-month','sim-birth-day')" class="p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition bg-white text-sm">
+                ${generateMonthOptionsHTML(savedMonth)}
+              </select>
+              <span class="text-xs text-gray-500">月</span>
+              <select id="sim-birth-day" class="p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition bg-white text-sm">
+                ${generateDayOptionsHTML(savedYear, savedMonth, savedDay)}
+              </select>
+              <span class="text-xs text-gray-500">日</span>
+            </div>
             <p id="sim-birthdate-error" class="hidden text-red-600 text-xs font-bold mt-2 flex items-center"><i data-lucide="alert-circle" class="h-3.5 w-3.5 mr-1"></i>生年月日を入力してください。</p>
             <button onclick="handleBirthDateSubmit()" class="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition flex justify-center items-center">
               次へ <i data-lucide="chevron-right" class="h-4 w-4 ml-1"></i>
