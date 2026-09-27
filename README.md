@@ -51,6 +51,7 @@ bash scripts/build.sh      # 公開用ファイルを dist/ に作成
 ```
 index.html                 アプリ本体（画面の HTML / JavaScript）
 data/facilities.js         施設・学校・学童の一覧データ（出典・確認日つき）
+data/hattatsu.js           発達支援の事業所一覧（scripts/hattatsu/update.py で福岡県の一覧から自動生成）
 js/enrollment.js           学年・認定・日付の計算
 js/search.js               教室検索のキーワード照合
 favicon.svg                サイトのアイコン（scripts/icons/ で PNG・ICO を作成）
@@ -68,6 +69,7 @@ docs/deploy-xserver.md     デプロイ・移行手順
 ## 掲載情報について
 
 - 施設・学校・学童の一覧は `data/facilities.js` にあり、項目ごとに出典（`source`）と確認日（`checkedAt`）を持っています。画面の各カードにも「出典：〇〇（確認日）」として表示されます。
+- 発達支援（児童発達支援・放課後等デイサービスなど）の事業所一覧は、福岡県の指定事業所一覧（毎月更新）から `python3 scripts/hattatsu/update.py` で `data/hattatsu.js` を作り直します（手で編集しないでください）。毎月20日に GitHub Actions が自動で実行し、変更があれば Pull Request を作ります。
 - 手続きや制度の説明は `index.html` に書かれています。
 - 子ども向け教室の情報は、公開 Google スプレッドシートを CSV として実行時に読み込んでいます。スプレッドシートには教室運営者の連絡先が含まれるため、**CSV をリポジトリにコミットしないでください**。
 - 教室の掲載希望は、アプリ内のフォームから公式LINEで受け付けています。

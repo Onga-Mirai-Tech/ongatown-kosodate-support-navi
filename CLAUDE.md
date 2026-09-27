@@ -25,7 +25,8 @@
   - 外部ライブラリ（lucide / PapaParse）は `integrity`（SRI）付きで読み込む。バージョンを上げるときは integrity も作り直す（index.html のコメント参照）。
   - サイトのアイコンは `favicon.svg` が元。`bash scripts/icons/generate.sh` で `favicon.ico` / `apple-touch-icon.png` を作り直す。
   - LINE の色は公式色 #06C755 を使う（ユーザーの判断）。免責事項ポップアップは毎回表示のまま残す。
-  - スクリプトの読み込み順: `data/facilities.js` → `js/enrollment.js` → `js/search.js` → index.html 内のアプリ本体（トップレベルの const / function を共有する通常の script。ES modules ではない）。
+  - 発達支援（`#hattatsu`）: 事業所一覧は `data/hattatsu.js`。**手で編集せず** `python3 scripts/hattatsu/update.py`（要 openpyxl）で福岡県の指定事業所一覧（毎月20日頃更新の Excel）から作り直す。毎月20日に `.github/workflows/update-hattatsu.yml` が自動実行し、変更があれば PR（ブランチ `auto/update-hattatsu`）を作る。県の一覧と町HPで食い違い、町HPを優先すると決めたものは `update.py` の `OVERRIDES` に書く（例: にこにこクラブの電話番号）。範囲は遠賀郡（遠賀町・芦屋町・水巻町・岡垣町）と中間市（町の「遠賀中間地域社会資源マップ」と同じ）。制度の説明は町「障がい者福祉のしおり」に基づく。方針: 空き状況・評判は載せない、判定機能は作らない、利用料の金額は載せない、表記は「障がい」。
+  - スクリプトの読み込み順: `data/facilities.js` → `data/hattatsu.js` → `js/enrollment.js` → `js/search.js` → index.html 内のアプリ本体（トップレベルの const / function を共有する通常の script。ES modules ではない）。
   - ヘッダーの「最終更新」日時は `scripts/build.sh` がデプロイ時に自動で書き込む（`index.html` が最後に main に反映された日時、日本時間）。ソース中の `<!--LAST_UPDATED-->…<!--/LAST_UPDATED-->` は手で書き換えない。
   - リンク共有時のカード（OGP）: `<head>` の `og:*` メタタグと `ogp.png`（1200x630）。画像は `scripts/ogp/ogp.html` を編集し `bash scripts/ogp/generate.sh`（Google Chrome が必要）で作り直す。
 - `server/` — 本番（Xserver / Apache）専用の `.htaccess`（HTTPS・正規ホスト統一・CSP 等）と `404.html`。

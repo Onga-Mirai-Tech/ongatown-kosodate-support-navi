@@ -13,6 +13,7 @@
 1. リポジトリをフォークし、作業用のブランチを作る
 2. 変更する（ローカルでの確認方法は [README](README.md#ローカルで動かす) を参照）
    - 施設・学校・学童の情報は `data/facilities.js` を編集し、出典で確認した日を `checkedAt` に書いてください
+   - 発達支援の事業所一覧（`data/hattatsu.js`）は福岡県の一覧から自動生成しています。誤りは県の一覧の更新（`python3 scripts/hattatsu/update.py`）で直すか、Issue でお知らせください
 3. `npm test` が通ること、スマートフォン幅（375px 程度）とPC幅の両方で表示を確認する
 4. Pull Request を作成し、テンプレートのチェック項目を埋める
 

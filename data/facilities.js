@@ -13,7 +13,13 @@ const DATA_SOURCES = {
   townHirowatari: { label: '遠賀町HP「遠賀町立広渡小学校」', url: 'https://www.town.onga.lg.jp/map/11209.html' },
   townAsagi: { label: '遠賀町HP「遠賀町立浅木小学校」', url: 'https://www.town.onga.lg.jp/map/11210.html' },
   townOngaJh: { label: '遠賀町HP「遠賀町立遠賀中学校」', url: 'https://www.town.onga.lg.jp/map/11211.html' },
-  townOngaMinamiJh: { label: '遠賀町HP「遠賀町立遠賀南中学校」', url: 'https://www.town.onga.lg.jp/map/11212.html' }
+  townOngaMinamiJh: { label: '遠賀町HP「遠賀町立遠賀南中学校」', url: 'https://www.town.onga.lg.jp/map/11212.html' },
+  // 発達支援（data/hattatsu.js と「発達支援」画面で使う）
+  prefShogaiji: { label: '福岡県「指定障がい児通所支援事業所・障がい児相談支援事業所一覧」', url: 'https://www.pref.fukuoka.lg.jp/contents/shougaijishiteijigyousyo.html' },
+  townShogaiShiori: { label: '遠賀町「障がい者福祉のしおり」', url: 'https://www.town.onga.lg.jp/soshiki/10/1520.html' },
+  townHoukagoDay: { label: '遠賀町HP「放課後等デイサービス」', url: 'https://www.town.onga.lg.jp/soshiki/10/1457.html' },
+  townShakaiShigenMap: { label: '遠賀中間地域社会資源マップ（遠賀町HP）', url: 'https://www.town.onga.lg.jp/soshiki/10/44632.html' },
+  cfaMushouka: { label: 'こども家庭庁「幼児教育・保育の無償化」', url: 'https://www.cfa.go.jp/policies/kokoseido/mushouka' }
 };
 
 // 保育施設
