@@ -31,7 +31,7 @@ main へ push
 作成後、パネルに表示される**ドキュメントルート**を控えておいてください。通常は次の形です。
 
 ```
-/home/<サーバーID>/onga-mirai-tech.com/public_html/ongatown-kosodate-support-navi
+/home/<サーバーID>/onga-mirai-tech.com/public_html/ongatown-kosodate-support-navi.onga-mirai-tech.com
 ```
 
 > `onga-mirai-tech.com` の DNS を Xserver 以外で管理している場合は、サブドメインの A レコード（または CNAME）を Xserver に向けてください。
@@ -103,7 +103,7 @@ main へ push
 
 - [ ] `https://ongatown-kosodate-support-navi.onga-mirai-tech.com/` が表示される
 - [ ] `http://` でアクセスすると `https://` に転送される
-- [ ] `https://onga-mirai-tech.com/ongatown-kosodate-support-navi/` が正規URLに転送される
+- [ ] `https://onga-mirai-tech.com/ongatown-kosodate-support-navi.onga-mirai-tech.com/` が正規URLに転送される
 - [ ] 存在しないURL（例: `/xxx`）で 404 ページが表示される
 - [ ] ブラウザの開発者ツールのコンソールに CSP（Content-Security-Policy）違反のエラーが出ていない
 - [ ] 「子ども向け教室」タブでスプレッドシートの教室情報が読み込まれている（【サンプル】が表示されていない）
