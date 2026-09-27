@@ -57,9 +57,16 @@ const schools = [
   }
 ];
 
-// 学童保育
+// 学童保育（各小学校内。児童数に応じて第2・第3クラブがある）
 const gakudos = [
-  { name: '広小ひまわりクラブ', desc: '広渡小学校内', address: '大字広渡1930番地', phone: '093-293-1910', source: 'townGakudo', checkedAt: '2026-09-27' },
-  { name: '遠賀南学童保育クラブ', desc: '浅木小学校内', address: '浅木二丁目2番1号', phone: '093-293-0079', source: 'townGakudo', checkedAt: '2026-09-27' },
-  { name: '遠賀北学童保育クラブ', desc: '島門小学校内', address: '大字鬼津1031番地の1', phone: '093-293-6531', source: 'townGakudo', checkedAt: '2026-09-27' }
+  { name: '広小ひまわりクラブ', desc: '広渡小学校内（第2広小ひまわりクラブもあります）', address: '大字広渡1930番地', phone: '093-293-1910', source: 'townGakudo', checkedAt: '2026-09-27' },
+  { name: '遠賀南学童保育クラブ', desc: '浅木小学校内（第2遠賀南学童保育クラブもあります）', address: '浅木二丁目2番1号', phone: '093-293-0079', source: 'townGakudo', checkedAt: '2026-09-27' },
+  { name: '遠賀北学童保育クラブ', desc: '島門小学校内（第2・第3遠賀北学童保育クラブもあります）', address: '大字鬼津1031番地の1', phone: '093-293-6531', source: 'townGakudo', checkedAt: '2026-09-27' }
 ];
+
+// 学童保育の運営団体（令和2年4月から町内すべての学童を運営。入会の申し込み・問い合わせ先）
+// ※利用料は掲載しない方針（金額の誤りによる不利益を避けるため。町HPへのリンクで案内する）
+const gakudoOperator = {
+  name: 'NPO法人遠賀学童クラブ', address: '浅木2丁目31番1号（遠賀町ふれあいの里内）', phone: '093-482-8366',
+  source: 'townGakudo', checkedAt: '2026-09-27'
+};

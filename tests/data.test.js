@@ -4,9 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadScripts } = require('./helpers');
 
-const { DATA_SOURCES, facilities, schools, gakudos } = loadScripts(
+const { DATA_SOURCES, facilities, schools, gakudos, gakudoOperator } = loadScripts(
   ['data/facilities.js'],
-  ['DATA_SOURCES', 'facilities', 'schools', 'gakudos']
+  ['DATA_SOURCES', 'facilities', 'schools', 'gakudos', 'gakudoOperator']
 );
 
 const PHONE = /^0\d{1,4}-\d{1,4}-\d{3,4}$/;
@@ -19,7 +19,7 @@ test('DATA_SOURCES: すべて https の URL とラベルを持つ', () => {
   }
 });
 
-const lists = { facilities, schools, gakudos };
+const lists = { facilities, schools, gakudos, gakudoOperator: [gakudoOperator] };
 for (const [listName, items] of Object.entries(lists)) {
   test(`${listName}: 必須項目・出典・確認日の形式`, () => {
     assert.ok(items.length > 0);

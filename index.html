@@ -703,8 +703,8 @@
           <div class="col-span-1 lg:col-span-2 mt-4 bg-green-50 border border-green-200 p-6 rounded-xl shadow-sm animate-fade-in">
             <h3 class="font-bold text-green-800 mb-2 flex items-center"><i data-lucide="info" class="h-5 w-5 mr-2"></i> 学童保育（放課後児童クラブ）について</h3>
             <p class="text-sm text-gray-700 mb-4 leading-relaxed">
-              家に帰っても仕事などの理由により保護者がいない児童を対象に、健全な育成をはかるため一定時間の生活指導を行う施設です。町内の運営は「NPO法人遠賀学童クラブ」が行っています。<br/>
-              利用料金や対象者、申し込み期間等の詳細につきましては、下記の遠賀町公式ホームページをご確認ください。
+              仕事などの理由で放課後に保護者が家庭にいない小学生を対象に、放課後の生活の場を提供する施設です。町内の学童保育は「${gakudoOperator.name}」が運営しています。<br/>
+              <strong>申し込み・お問い合わせは、各学童保育クラブまたは${gakudoOperator.name}（${gakudoOperator.phone}）へ。</strong>利用料などの詳細は、下記の遠賀町公式ホームページをご確認ください。
             </p>
             <a href="https://www.town.onga.lg.jp/soshiki/41/1434.html" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-medium text-green-700 hover:text-green-800 transition bg-white px-4 py-2 rounded border border-green-200 shadow-sm">
               <i data-lucide="external-link" class="h-4 w-4 mr-1.5"></i> 学童保育の詳細はこちら（町公式HP）
@@ -1536,58 +1536,69 @@
         </div>
       `;
 
+      // 学童保育の手続き（出典: 遠賀町HP「学童保育」 data/facilities.js の DATA_SOURCES.townGakudo）
+      // ※申し込みの時期・必要書類・利用料は町HPに記載が無い、または掲載しない方針のため、運営団体への問い合わせを案内する
       const gakudoContent = `
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-fade-in mt-4 w-full">
-          <h3 class="text-lg font-bold text-green-800 mb-6 flex items-center">
-            <i data-lucide="calendar" class="mr-2 h-5 w-5"></i> 学童保育の入所手続き（4月入所）
+          <h3 class="text-lg font-bold text-green-800 mb-4 flex items-center">
+            <i data-lucide="calendar" class="mr-2 h-5 w-5"></i> 学童保育の利用の申し込み
           </h3>
-          
-          <div class="relative border-l-2 border-green-200 ml-3 md:ml-6 space-y-8">
-            <div class="relative pl-6">
-              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-green-500 border-2 border-white"></div>
-              <div class="text-sm font-bold text-green-700 mb-1">前年 11月頃</div>
-              <h4 class="font-bold text-gray-800 mb-1">入所申込書の配布開始</h4>
-              <p class="text-sm text-gray-600">各学童保育クラブ、役場（こども家庭課）にて申込書等の必要書類が配布されます。<br/>
-              <a href="https://www.town.onga.lg.jp/soshiki/41/1434.html" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-green-700 hover:text-green-800 hover:underline mt-1 font-medium"><i data-lucide="external-link" class="h-3 w-3 mr-1"></i> 詳しくはこちら（町公式HP）</a></p>
-            </div>
-            
-            <div class="relative pl-6">
-              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-green-300 border-2 border-white"></div>
-              <div class="text-sm font-bold text-green-700 mb-1">12月上旬 〜 中旬</div>
-              <h4 class="font-bold text-gray-800 mb-1">入所申し込みの受付</h4>
-              <p class="text-sm text-gray-600">必要な書類（就労証明書など）を揃え、役場（こども家庭課）へ提出します。<br/>※定員を超える申し込みがあった場合は、低学年等から優先的に入所調整が行われます。</p>
-            </div>
 
-            <div class="relative pl-6">
-              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-green-300 border-2 border-white"></div>
-              <div class="text-sm font-bold text-green-700 mb-1">2月頃</div>
-              <h4 class="font-bold text-gray-800 mb-1">入所決定の通知</h4>
-              <p class="text-sm text-gray-600">入所の可否についての結果が郵送等で通知されます。</p>
-            </div>
-
-            <div class="relative pl-6">
-              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-green-500 border-2 border-white"></div>
-              <div class="text-sm font-bold text-green-700 mb-1">4月1日 〜</div>
-              <h4 class="font-bold text-gray-800 mb-1">学童保育の利用開始</h4>
-              <p class="text-sm text-gray-600">放課後や長期休み中の利用が始まります。</p>
-            </div>
+          <div class="bg-green-50 p-4 rounded-lg mb-6">
+            <p class="text-sm text-gray-700 leading-relaxed">
+              <strong>対象：</strong>遠賀町立小学校に通う児童で、保護者の仕事などの理由により、放課後に家庭で見守ることができない子ども。保護者の申し込みを受けて町が認めると利用できます。<br/>
+              町内の学童保育は、令和2年4月から<strong>${gakudoOperator.name}</strong>が運営しています。
+            </p>
           </div>
-          
-          <div class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h4 class="font-bold text-gray-800 mb-2">💡 年度途中の入所・一時利用について</h4>
-            <p class="text-sm text-gray-700 leading-relaxed mb-2">
-              年度途中の入所希望については、希望する学童クラブの定員に空きがある場合に限り、随時受け付けが行われます。入所希望日の属する月の前月15日までにこども家庭課へお申し込みください。
-            </p>
-            <p class="text-sm text-gray-700 leading-relaxed border-t border-gray-200 pt-2 mt-2">
-              夏休み等の長期休業期間のみの利用（一時利用）も可能です。事前申し込みが必要ですので、時期が近づきましたら町HPや広報誌をご確認ください。
-            </p>
+
+          <ol class="relative border-l-2 border-green-200 ml-3 md:ml-6 space-y-8">
+            <li class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-green-500 border-2 border-white"></div>
+              <h4 class="font-bold text-gray-800 mb-1">1. 学童保育クラブ・運営団体に問い合わせる</h4>
+              <p class="text-sm text-gray-600">通っている（入学予定の）小学校の学童保育クラブ、または${gakudoOperator.name}に問い合わせます。<br/>申し込みの時期や必要な書類は、問い合わせの際にご確認ください。</p>
+            </li>
+            <li class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-green-300 border-2 border-white"></div>
+              <h4 class="font-bold text-gray-800 mb-1">2. 案内に従って申し込む</h4>
+              <p class="text-sm text-gray-600">クラブ・運営団体からの案内に従って、入会の申し込みをします。</p>
+            </li>
+            <li class="relative pl-6">
+              <div class="absolute -left-2 top-1.5 h-4 w-4 rounded-full bg-green-500 border-2 border-white"></div>
+              <h4 class="font-bold text-gray-800 mb-1">3. 利用開始</h4>
+              <p class="text-sm text-gray-600">町が利用を認めると、放課後や長期休みの利用が始まります。</p>
+            </li>
+          </ol>
+
+          <div class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+            <div>
+              <h4 class="font-bold text-gray-800 mb-1">🕒 開所時間</h4>
+              <p class="text-sm text-gray-700 leading-relaxed">
+                下校後〜18時（土曜日と、夏・冬・春休みは8時〜18時）。18時〜19時は延長保育があります。<br/>
+                日曜日・祝日・お盆（8月13日〜15日）・年末年始（12月29日〜1月3日）はお休みです。
+              </p>
+            </div>
+            <div class="border-t border-gray-200 pt-3">
+              <h4 class="font-bold text-gray-800 mb-1">💡 夏・冬・春休みだけの利用</h4>
+              <p class="text-sm text-gray-700 leading-relaxed">長期休みの期間だけ利用する場合は、別の要件があります。学童保育クラブまたは${gakudoOperator.name}にお問い合わせください。</p>
+            </div>
+            <p class="text-xs text-gray-600 border-t border-gray-200 pt-3">利用料などの詳細は、町公式HPをご確認いただくか、運営団体にお問い合わせください。</p>
           </div>
         </div>
 
         <div class="mt-12 bg-green-50 border border-green-200 rounded-xl p-6 text-center animate-fade-in w-full">
-          <h4 class="font-bold text-green-800 mb-2">学童保育の手続きに関するお問い合わせ</h4>
-          <p class="text-gray-800 font-bold mb-1">遠賀町役場 こども家庭課 子育て支援係</p>
-          <a href="tel:0932931254" class="text-2xl font-black text-green-700 hover:underline">093-293-1254</a>
+          <h4 class="font-bold text-green-800 mb-2">学童保育の申し込み・お問い合わせ</h4>
+          <p class="text-gray-800 font-bold mb-1">${gakudoOperator.name}</p>
+          <p class="text-xs text-gray-600 mb-2">遠賀町${gakudoOperator.address}</p>
+          <a href="tel:${gakudoOperator.phone.replace(/-/g, '')}" class="text-2xl font-black text-green-700 hover:underline">${gakudoOperator.phone}</a>
+          <div class="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+            <button onclick="switchTab('facilities'); setFacilityType('gakudo');" class="inline-flex items-center justify-center text-sm font-medium text-green-700 hover:text-green-800 transition bg-white px-4 py-2 rounded border border-green-200 shadow-sm">
+              <i data-lucide="school" class="h-4 w-4 mr-1.5"></i> 各学童保育クラブの連絡先
+            </button>
+            <a href="${DATA_SOURCES.townGakudo.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center text-sm font-medium text-green-700 hover:text-green-800 transition bg-white px-4 py-2 rounded border border-green-200 shadow-sm">
+              <i data-lucide="external-link" class="h-4 w-4 mr-1.5"></i> 学童保育（町公式HP）
+            </a>
+          </div>
+          ${sourceNoteHTML(gakudoOperator)}
         </div>
       `;
 
