@@ -1,0 +1,110 @@
+# main ブランチへの push で、Xserver に SSH(rsync) でデプロイする。
+# Pull Request では公開ファイルの組み立て（build）だけを行い、デプロイはしない。
+#
+# 必要な設定（GitHub > Settings > Environments > production）:
+#   Variables: DEPLOY_ENABLED = true   ← これが true になるまでデプロイは実行されない
+#              XSERVER_SSH_PORT        （省略時 10022）
+#   Secrets  : XSERVER_SSH_HOST, XSERVER_SSH_USER, XSERVER_SSH_KEY,
+#              XSERVER_KNOWN_HOSTS, XSERVER_DEPLOY_PATH
+# 詳しい手順は docs/deploy-xserver.md を参照。
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'rsync を --dry-run で実行する（サーバーは変更しない）'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build
+        run: bash scripts/build.sh
+
+  deploy:
+    needs: build
+    # フォークや PR からは実行しない（シークレットはこのリポジトリの main でのみ使う）
+    if: >-
+      github.repository == 'Onga-Mirai-Tech/ongatown-kosodate-support-navi' &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://ongatown-kosodate-support-navi.onga-mirai-tech.com/
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - name: Check deploy is enabled
+        id: gate
+        env:
+          DEPLOY_ENABLED: ${{ vars.DEPLOY_ENABLED }}
+        run: |
+          if [ "$DEPLOY_ENABLED" != "true" ]; then
+            echo "::notice::DEPLOY_ENABLED が true ではないため、デプロイをスキップしました。"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.gate.outputs.enabled == 'true'
+
+      - name: Build
+        if: steps.gate.outputs.enabled == 'true'
+        run: bash scripts/build.sh
+
+      - name: Validate deploy path
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          DEPLOY_PATH: ${{ secrets.XSERVER_DEPLOY_PATH }}
+        run: |
+          # rsync --delete で意図しないディレクトリ（メインドメインの public_html 直下など）を
+          # 消してしまわないよう、public_html 配下のサブディレクトリであることを確認する
+          case "${DEPLOY_PATH%/}" in
+            */public_html/?*) ;;
+            *) echo "::error::XSERVER_DEPLOY_PATH は public_html 配下のサブドメイン用ディレクトリを指定してください"; exit 1 ;;
+          esac
+
+      - name: Setup SSH
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          SSH_KEY: ${{ secrets.XSERVER_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.XSERVER_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy (rsync)
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          HOST: ${{ secrets.XSERVER_SSH_HOST }}
+          USER: ${{ secrets.XSERVER_SSH_USER }}
+          PORT: ${{ vars.XSERVER_SSH_PORT || '10022' }}
+          DEPLOY_PATH: ${{ secrets.XSERVER_DEPLOY_PATH }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          rsync -rlcv --delete $DRY_RUN \
+            --chmod=D755,F644 \
+            --exclude='.well-known/' \
+            --exclude='.user.ini' \
+            -e "ssh -p $PORT -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts" \
+            dist/ "$USER@$HOST:${DEPLOY_PATH%/}/"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

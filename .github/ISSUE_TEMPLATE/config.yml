@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 教室の掲載希望・GitHub アカウントをお持ちでない方
+    url: https://line.me/R/ti/p/@860avzup
+    about: 公式LINEから受け付けています
+  - name: 制度・手続きについてのご相談
+    url: https://www.town.onga.lg.jp/life/3/
+    about: 制度そのものに関するお問い合わせは遠賀町役場へお願いします（このリポジトリでは回答できません）

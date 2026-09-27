@@ -1,0 +1,53 @@
+# =====================================================================
+# 遠賀町 子育て支援ナビ - Xserver（Apache）用設定
+# scripts/build.sh により dist/.htaccess としてドキュメントルートに配置される。
+# ドメインを変更する場合は、下記「正規ホスト名」の2箇所を書き換えること。
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# HTTPS化 + 正規ホスト名への統一
+# Xserverのサブドメインは「メインドメインのpublic_html/<サブドメインのFQDN>/」に
+# 置かれるため、https://onga-mirai-tech.com/<サブドメインのFQDN>/ でも
+# 同じ内容が見えてしまう。正規ホスト名以外からのアクセスはすべて301で寄せる。
+# ---------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !on [OR]
+  RewriteCond %{HTTP_HOST} !^ongatown-kosodate-support-navi\.onga-mirai-tech\.com$ [NC]
+  RewriteRule ^(.*)$ https://ongatown-kosodate-support-navi.onga-mirai-tech.com/$1 [R=301,L]
+</IfModule>
+
+ErrorDocument 404 /404.html
+
+# ディレクトリ一覧を表示しない
+Options -Indexes
+
+# ---------------------------------------------------------------------
+# セキュリティヘッダー
+# ---------------------------------------------------------------------
+<IfModule mod_headers.c>
+  # HSTS：まずは短め（1日）で開始し、問題がなければ max-age=31536000 に延ばす
+  Header always set Strict-Transport-Security "max-age=86400"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "DENY"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+
+  # CSP：外部から読み込めるのは、index.html で使っているCDNと教室スプレッドシートのみ。
+  #  - script-src : Tailwind Play CDN / lucide(unpkg) / PapaParse(cdnjs)
+  #                 ※インラインscriptとonclick属性を使っているため 'unsafe-inline' が必要
+  #  - style-src  : Tailwind Play CDN が実行時に<style>を注入するため 'unsafe-inline' が必要
+  #  - connect-src: 公開スプレッドシートCSV（docs.google.com → *.googleusercontent.com にリダイレクト）
+  # CDNやデータ取得先を追加・変更したら、ここも必ず更新すること（更新漏れは画面崩れの原因になる）。
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
+</IfModule>
+
+# ---------------------------------------------------------------------
+# キャッシュ
+# HTMLは毎回サーバーに更新確認させ、修正した情報がすぐ利用者に届くようにする
+# ---------------------------------------------------------------------
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
