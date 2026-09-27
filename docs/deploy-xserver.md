@@ -43,6 +43,7 @@ main へ push
 ### 1-3. SSH の有効化とデプロイ専用鍵の登録
 
 1. サーバーパネル → **SSH設定** → 「ON」にする
+   - 同じ画面の **「国外IPアクセス制限」を OFF** にする。初期状態では ON になっており、GitHub Actions（海外IP）からの接続が拒否される（鍵認証のみなので、OFF にしても鍵を持たない人はログインできない）
 2. 手元の Mac で**デプロイ専用**の鍵を作る（普段使いの鍵とは分けます）
 
    ```bash
@@ -132,6 +133,7 @@ main へ push
 | --- | --- |
 | `Host key verification failed` | `XSERVER_KNOWN_HOSTS` が `ssh-keyscan -p 10022` の出力と一致しているか |
 | `Permission denied (publickey)` | 公開鍵がサーバーに登録されているか、`XSERVER_SSH_KEY` に秘密鍵全体（BEGIN/END 行を含む）が入っているか |
-| SSH 接続がタイムアウトする | サーバーパネルの SSH 設定が ON か。アクセス制限系の設定（国外IPからの接続制限など）が GitHub Actions からの接続を拒否していないか |
+| `Connection closed by <IP> port 10022`（認証前に切断される） | SSH設定の「国外IPアクセス制限」が ON のままになっていないか。手元からは接続できても GitHub Actions からは拒否される |
+| SSH 接続がタイムアウトする | サーバーパネルの SSH 設定が ON か |
 | `XSERVER_DEPLOY_PATH は public_html 配下の…` | 誤ってメインドメインの `public_html` 直下を指定していないか（`--delete` で他サイトを消さないための安全装置です） |
 | 画面が崩れる・アイコンが出ない | コンソールの CSP 違反を確認し、`server/.htaccess` の CSP に読み込み元を追加 |
