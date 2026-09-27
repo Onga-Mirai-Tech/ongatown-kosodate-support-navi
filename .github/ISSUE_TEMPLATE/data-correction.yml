@@ -1,0 +1,43 @@
+name: 情報の修正
+description: 掲載情報の誤り・古い情報・不足を報告する
+title: "[情報修正] "
+labels: ["data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        報告ありがとうございます。この Issue は公開されます。**個人の電話番号・住所・氏名などは書かないでください。**
+  - type: dropdown
+    id: section
+    attributes:
+      label: 該当する画面
+      options:
+        - ホーム（学年早見表）
+        - 施設・学校一覧
+        - 入園・入学・利用の手続き（給付認定の簡易判定を含む）
+        - 子ども向け教室
+        - その他の行政支援
+        - その他
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: 現在の表示
+      description: アプリに表示されている内容（誤っている箇所）
+    validations:
+      required: true
+  - type: textarea
+    id: correct
+    attributes:
+      label: 正しい情報
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: 出典
+      description: 遠賀町公式ホームページの URL、または配布資料の名称・年度など（出典のない情報は反映できません）
+      placeholder: https://www.town.onga.lg.jp/...
+    validations:
+      required: true

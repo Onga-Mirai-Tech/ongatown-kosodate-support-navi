@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+    旧URL（GitHub Pages: onga-mirai-tech.github.io/ongatown-kosodate-support-navi/）から
+    独自ドメインへ案内するためのページ。GitHub Pages はサーバー側の301リダイレクトができないため、
+    canonical + meta refresh + JavaScript で転送する。
+    .github/workflows/pages-redirect.yml から手動で公開する（404.html としても配置される）。
+  -->
+  <title>遠賀町 子育て支援ナビは移転しました</title>
+  <link rel="canonical" href="https://ongatown-kosodate-support-navi.onga-mirai-tech.com/">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="0; url=https://ongatown-kosodate-support-navi.onga-mirai-tech.com/">
+  <script>
+    // URLの #以降（将来のタブ直リンク等）は引き継いで転送する
+    location.replace('https://ongatown-kosodate-support-navi.onga-mirai-tech.com/' + location.hash);
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; text-align: center; padding: 48px 16px; color: #1f2937; }
+    a { color: #c2410c; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <p>遠賀町 子育て支援ナビは新しいURLに移転しました。</p>
+  <p><a href="https://ongatown-kosodate-support-navi.onga-mirai-tech.com/">https://ongatown-kosodate-support-navi.onga-mirai-tech.com/</a></p>
+  <p>ブックマークの更新をお願いします。</p>
+</body>
+</html>

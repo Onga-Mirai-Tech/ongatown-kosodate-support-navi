@@ -1,2 +1,73 @@
-# ongatown-kosodate-support-navi
-遠賀町子育て支援ナビ
+# 遠賀町 子育て支援ナビ
+
+福岡県遠賀町の保育施設・小中学校・学童保育の情報や、教育・保育給付認定の目安、入園・入学の手続きの流れをまとめた Web アプリです。
+
+**公開URL:** https://ongatown-kosodate-support-navi.onga-mirai-tech.com/
+
+> [!IMPORTANT]
+> このアプリは**個人開発の非公式アプリ**です。遠賀町役場が提供・運営しているものではなく、遠賀町役場ではこのアプリについてのサポートを行っていません。
+> 掲載情報は町の配布資料や公式ホームページを基にした**目安**です。最新・正確な情報は各施設および遠賀町役場にご確認ください。
+
+## 主な機能
+
+- **学年（クラス）早見表** — 生年月日から、0歳児クラス〜中学3年生までの該当年度を表示
+- **施設・学校一覧** — 保育園・認定こども園・学童保育・小中学校（校区）の情報
+- **給付認定の簡易判定** — いくつかの質問に答えると、1号〜3号認定と無償化の目安を表示
+- **手続きの流れ** — 保育施設・幼稚園・小中学校・学童保育の申込スケジュールと必要書類
+- **子ども向け教室** — 町内と町周辺の習い事情報（Google スプレッドシートから読み込み）
+- **その他の行政支援** — 一時預かり、こども誰でも通園制度、子育て支援ひろば など
+
+## 技術構成
+
+ビルド不要の静的サイトです（`index.html` 1ファイル）。
+
+| 用途 | ライブラリ |
+| --- | --- |
+| スタイル | [Tailwind CSS](https://tailwindcss.com/)（Play CDN） |
+| アイコン | [Lucide](https://lucide.dev/) |
+| CSV 読み込み | [Papa Parse](https://www.papaparse.com/) |
+
+## ローカルで動かす
+
+```bash
+git clone https://github.com/Onga-Mirai-Tech/ongatown-kosodate-support-navi.git
+cd ongatown-kosodate-support-navi
+python3 -m http.server 8000
+```
+
+ブラウザで http://localhost:8000/ を開きます。
+
+## ディレクトリ構成
+
+```
+index.html                 アプリ本体（HTML / JavaScript / データ）
+server/                    本番サーバー（Xserver）専用の .htaccess と 404 ページ
+scripts/build.sh           公開ファイルを dist/ に集めるスクリプト
+pages-redirect/            旧URL（GitHub Pages）から新URLへの転送ページ
+docs/deploy-xserver.md     デプロイ・移行手順
+.github/workflows/         ビルド・デプロイの GitHub Actions
+```
+
+## 掲載情報について
+
+- 施設・学校・手続きの情報は `index.html` 内のデータ（`facilities` / `schools` / `gakudos` など）に直接書かれています。
+- 子ども向け教室の情報は、公開 Google スプレッドシートを CSV として実行時に読み込んでいます。スプレッドシートには教室運営者の連絡先が含まれるため、**CSV をリポジトリにコミットしないでください**。
+- 教室の掲載希望は、アプリ内のフォームから公式LINEで受け付けています。
+
+## コントリビュート
+
+情報の誤りの報告や改善提案を歓迎します。詳しくは [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
+
+- 情報の誤り・古い情報 → [Issue（情報の修正）](https://github.com/Onga-Mirai-Tech/ongatown-kosodate-support-navi/issues/new/choose)
+- GitHub アカウントをお持ちでない方 → アプリ下部の公式LINEからご連絡ください
+- セキュリティ上の問題 → [SECURITY.md](SECURITY.md)
+
+## デプロイ
+
+`main` ブランチへのマージで、GitHub Actions から Xserver に自動デプロイされます。設定手順は [docs/deploy-xserver.md](docs/deploy-xserver.md) を参照してください。
+
+## ライセンス
+
+[MIT License](LICENSE) © 2026 Onga-Mirai-Tech
+
+他の自治体向けに改変して公開することも自由です。その際は、元の自治体名や「遠賀町」の情報を必ず置き換え、非公式である旨の表示を残してください。
