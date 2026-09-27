@@ -101,12 +101,21 @@ jobs:
           DEPLOY_PATH: ${{ secrets.XSERVER_DEPLOY_PATH }}
           DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
         run: |
-          rsync -rlcv --delete $DRY_RUN \
-            --chmod=D755,F644 \
-            --exclude='.well-known/' \
-            --exclude='.user.ini' \
-            -e "ssh -p $PORT -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts" \
-            dist/ "$USER@$HOST:${DEPLOY_PATH%/}/"
+          # Xserver への SSH 接続は一時的にタイムアウトすることがあるため、最大3回まで再試行する
+          # （rsync は差分同期なので、途中で失敗しても再実行して問題ない）
+          for attempt in 1 2 3; do
+            if rsync -rlcv --delete $DRY_RUN \
+              --chmod=D755,F644 \
+              --exclude='.well-known/' \
+              --exclude='.user.ini' \
+              -e "ssh -p $PORT -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts -o ConnectTimeout=30" \
+              dist/ "$USER@$HOST:${DEPLOY_PATH%/}/"; then
+              exit 0
+            fi
+            echo "::warning::rsync に失敗しました（${attempt}/3 回目）"
+            [ "$attempt" -lt 3 ] && sleep 30
+          done
+          exit 1
 
       - name: Cleanup SSH key
         if: always()

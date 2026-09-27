@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>遠賀町 子育て支援ナビ</title>
   <meta name="description" content="福岡県遠賀町の保育園・幼稚園・学童保育・小中学校の情報、教育・保育給付認定の目安、入園・入学の手続きの流れをまとめた非公式の子育て支援アプリです。">
   <link rel="canonical" href="https://ongatown-kosodate-support-navi.onga-mirai-tech.com/">
@@ -42,6 +42,11 @@
     .hide-scrollbar {
       -ms-overflow-style: none;
       scrollbar-width: none;
+    }
+    /* iPhone（Safari）は文字サイズ16px未満の入力欄をタップすると自動で拡大するため、スマホ幅では16pxにする。
+       （以前は拡大そのものを禁止していたが、文字を拡大して読みたい利用者が拡大できなくなるため廃止） */
+    @media (max-width: 767px) {
+      input, select, textarea { font-size: 16px !important; }
     }
     /* 選択不可にするユーティリティ */
     .no-select {
@@ -323,13 +328,74 @@
     };
 
     // --- コア機能 ---
+    // --- URL（#以降）と画面の対応 ---
+    // 例: #facilities, #flow/school
+    // 開いている画面をURLに反映することで、ブラウザの「戻る」やLINE等でのページ共有ができるようにする。
+    // ホームはURLに何も付けない（トップページのURLのまま）。
+    const TAB_TITLES = {
+      home: '',
+      facilities: '施設・学校一覧',
+      flow: '入園・入学・利用の手続き',
+      classes: '子ども向け教室',
+      services: 'その他の行政支援'
+    };
+    // タブ内の切り替え（施設の種類・手続きの種類）。先頭が既定値で、既定値のときはURLに付けない
+    const SUB_TABS = {
+      facilities: ['hoiku', 'gakudo', 'school'],
+      flow: ['hoiku', 'school', 'gakudo']
+    };
+
+    function getSubTab(tabId) {
+      if (tabId === 'facilities') return state.facilityType;
+      if (tabId === 'flow') return state.flow.type;
+      return null;
+    }
+
+    function setSubTab(tabId, value) {
+      if (tabId === 'facilities') state.facilityType = value;
+      if (tabId === 'flow') state.flow.type = value;
+    }
+
+    function buildHash() {
+      if (state.activeTab === 'home') return '';
+      const sub = SUB_TABS[state.activeTab];
+      const subValue = getSubTab(state.activeTab);
+      return '#' + state.activeTab + (sub && subValue !== sub[0] ? '/' + subValue : '');
+    }
+
+    // mode: 'push'（履歴に追加。「戻る」で前の画面に戻れる） / 'replace'（履歴を増やさない）
+    function syncUrl(mode) {
+      const hash = buildHash();
+      if (hash === location.hash) return;
+      const url = location.pathname + location.search + hash;
+      if (mode === 'push') history.pushState(null, '', url);
+      else history.replaceState(null, '', url);
+    }
+
+    // URLの#以降から画面を復元する。不正な値は無視してホーム／既定のタブにする
+    function applyHashToState() {
+      const [tab, subValue] = location.hash.replace(/^#/, '').split('/');
+      state.activeTab = Object.prototype.hasOwnProperty.call(TAB_TITLES, tab) ? tab : 'home';
+      const sub = SUB_TABS[state.activeTab];
+      if (sub) setSubTab(state.activeTab, sub.includes(subValue) ? subValue : sub[0]);
+    }
+
     function switchTab(tabId) {
       state.activeTab = tabId;
+      syncUrl('push');
       renderApp();
-      window.scrollTo(0, 0); 
+      window.scrollTo(0, 0);
     }
 
     function renderApp() {
+      const tabTitle = TAB_TITLES[state.activeTab];
+      document.title = tabTitle ? `${tabTitle} | 遠賀町 子育て支援ナビ` : '遠賀町 子育て支援ナビ';
+
+      document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(btn => {
+        if (btn.dataset.tab === state.activeTab) btn.setAttribute('aria-current', 'page');
+        else btn.removeAttribute('aria-current');
+      });
+
       document.querySelectorAll('.nav-btn').forEach(btn => {
         if (btn.dataset.tab === state.activeTab) {
           btn.className = "nav-btn w-full flex items-center px-4 py-3 rounded-lg text-left transition bg-orange-100 text-orange-800 font-bold";
@@ -669,6 +735,7 @@
 
     function setFacilityType(type) {
       state.facilityType = type;
+      syncUrl('replace');
       renderApp();
     }
 
@@ -1329,6 +1396,7 @@
 
     function setFlowType(type) {
       state.flow.type = type;
+      syncUrl('replace');
       renderApp();
     }
 
@@ -2059,8 +2127,19 @@
       }
     };
 
+    // ブラウザの「戻る」「進む」やURLの#の書き換えで画面を切り替える
+    window.addEventListener('popstate', () => {
+      applyHashToState();
+      renderApp();
+      window.scrollTo(0, 0);
+    });
+
     // --- 初期化 ---
     window.addEventListener('DOMContentLoaded', () => {
+      // URLの#以降（共有されたリンク等）から開く画面を決める
+      applyHashToState();
+      syncUrl('replace'); // 不正な#は正しい形に直す
+
       // 画面はすぐに描画し、教室情報はバックグラウンドで読み込む
       // （以前はCSVの読み込み完了まで画面全体が表示されなかった）
       renderApp();
