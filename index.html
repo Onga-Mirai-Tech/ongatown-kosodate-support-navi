@@ -39,12 +39,12 @@
 
   <!-- 免責事項ポップアップ -->
   <div id="disclaimer-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-labelledby="disclaimer-title" aria-describedby="disclaimer-desc" class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in max-h-full overflow-y-auto">
       <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
         <i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i>
       </div>
-      <h2 class="text-xl font-bold text-center text-gray-800 mb-4">免責事項<br><span class="text-sm font-normal text-gray-500">（必ずお読みください）</span></h2>
-      <div class="space-y-4 text-sm text-gray-700 mb-6 bg-red-50 p-4 rounded-lg border border-red-100">
+      <h2 id="disclaimer-title" class="text-xl font-bold text-center text-gray-800 mb-4">免責事項<br><span class="text-sm font-normal text-gray-500">（必ずお読みください）</span></h2>
+      <div id="disclaimer-desc" class="space-y-4 text-sm text-gray-700 mb-6 bg-red-50 p-4 rounded-lg border border-red-100">
         <p class="flex items-start">
           <i data-lucide="info" class="h-5 w-5 mr-2 text-red-500 mt-0.5 flex-shrink-0"></i>
           <span>このアプリケーションは、<strong>あくまで個人開発アプリです。</strong>遠賀町役場が提供・運営している公式のものではありません。</span>
@@ -54,7 +54,7 @@
           <span>制度の変更等があるため、当アプリの情報は目安としてご利用ください。<strong>最新情報は各施設および、遠賀町役場にお問い合わせください。</strong></span>
         </p>
       </div>
-      <button onclick="closeDisclaimer()" class="w-full bg-orange-700 hover:bg-orange-800 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center">
+      <button id="disclaimer-agree" onclick="closeDisclaimer()" class="w-full bg-orange-700 hover:bg-orange-800 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center">
         同意して利用を始める
       </button>
     </div>
@@ -105,13 +105,13 @@
     </aside>
 
     <!-- Content Container -->
-    <main class="flex-1 p-4 md:p-6 md:min-h-[calc(100vh-140px)] z-10 max-w-full" id="main-content">
+    <main class="flex-1 p-4 md:p-6 md:min-h-[calc(100vh-140px)] z-10 max-w-full focus:outline-none" id="main-content" tabindex="-1">
       <!-- JSでコンテンツを描画 -->
     </main>
   </div>
 
   <!-- Footer Info Box -->
-  <div class="bg-orange-900 text-orange-50 py-8 px-4 mt-auto z-10 relative">
+  <footer class="bg-orange-900 text-orange-50 py-8 px-4 mt-auto z-10 relative">
     <div class="max-w-4xl mx-auto flex flex-col items-center">
       <div class="mb-6 w-full text-center border-b border-orange-800/60 pb-6">
         <p class="text-xs mb-3 font-medium text-orange-200">アプリに関するお問い合わせ・ご要望・情報掲載などはこちら</p>
@@ -122,14 +122,14 @@
       </div>
       <div class="text-center text-sm opacity-75">
         <p class="mb-2 text-xs">※当サイトは町が配布する資料や公式HPを基に作成された目安です。<br/>※遠賀町役場ではこのアプリについてのサポートは行っていません。</p>
-        <p>&copy; 2026 Onga-Mirai-Tech</p>
+        <p>&copy; <span id="copyright-years">2026</span> Onga-Mirai-Tech</p>
         <p class="mt-1 text-xs">
           このアプリはオープンソース（MIT License）です。
           <a href="https://github.com/Onga-Mirai-Tech/ongatown-kosodate-support-navi" target="_blank" rel="noopener noreferrer" class="underline hover:text-white">ソースコード（GitHub）</a>
         </p>
       </div>
     </div>
-  </div>
+  </footer>
 
   <!-- Mobile Bottom Navigation -->
   <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-40 pb-safe overflow-x-auto hide-scrollbar">
@@ -271,12 +271,31 @@
     }
 
     // --- 免責事項ポップアップ制御 ---
+    // 免責事項は非公式であることを伝えるため毎回表示する。
+    // 表示中は背景のページをスクロール・操作できないようにし（inert）、キーボードの操作位置を同意ボタンに置く。
+    function setBackgroundInert(isInert) {
+      document.querySelectorAll('body > :not(#disclaimer-modal):not(script)').forEach(el => {
+        el.inert = isInert;
+      });
+    }
+
+    function openDisclaimer() {
+      const modal = document.getElementById('disclaimer-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+      setBackgroundInert(true);
+      document.getElementById('disclaimer-agree').focus();
+    }
+
     function closeDisclaimer() {
       const modal = document.getElementById('disclaimer-modal');
-      if (modal) {
-        modal.classList.add('hidden');
-        document.body.classList.remove('overflow-hidden');
-      }
+      if (!modal) return;
+      modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+      setBackgroundInert(false);
+      // 同意後は本文の先頭から操作できるようにする
+      document.getElementById('main-content').focus({ preventScroll: true });
     }
 
     // --- 状態管理 ---
@@ -387,6 +406,7 @@
       });
 
       const contentDiv = document.getElementById('main-content');
+      const focus = captureFocus(contentDiv);
       switch (state.activeTab) {
         case 'home': contentDiv.innerHTML = getHomeHTML(); break;
         case 'facilities': contentDiv.innerHTML = getFacilityHTML(); break;
@@ -397,6 +417,28 @@
       }
 
       renderLucideIcons();
+      restoreFocus(contentDiv, focus);
+    }
+
+    // renderApp() は #main-content を丸ごと描き直すため、そのままでは選択肢やボタンを操作するたびに
+    // キーボードの操作位置（フォーカス）がページの先頭に戻ってしまう。
+    // 描き直す前に操作していた要素を覚えておき、描き直した後の同じ要素（id か onclick が同じもの）に戻す。
+    // 同じ要素が無くなった場合（簡易判定で次の質問に進んだ等）は、[data-focus-target] か本文そのものに移す。
+    function captureFocus(container) {
+      const el = document.activeElement;
+      if (!el || !container.contains(el) || el === container) return null;
+      return { id: el.id || null, onclick: el.getAttribute('onclick') };
+    }
+
+    function restoreFocus(container, focus) {
+      if (!focus) return;
+      let target = null;
+      if (focus.id) target = document.getElementById(focus.id);
+      if (!target && focus.onclick) {
+        target = [...container.querySelectorAll('[onclick]')].find(el => el.getAttribute('onclick') === focus.onclick);
+      }
+      if (!target) target = container.querySelector('[data-focus-target]') || container;
+      target.focus({ preventScroll: true });
     }
 
     // lucide（アイコン用CDN）の読み込みに失敗していても、アイコンが表示されないだけで
@@ -468,7 +510,7 @@
       daySelect.innerHTML = generateDayOptionsHTML(y, m, currentDay);
     }
 
-    window.calculateAgeClass = function() {
+    function calculateAgeClass() {
       const dateStr = readDateFromSelects('childBirthYear', 'childBirthMonth', 'childBirthDay');
       const resultDiv = document.getElementById('ageClassResult');
       if (!dateStr) {
@@ -527,7 +569,7 @@
           </table>
         </div>
       `;
-    };
+    }
 
     function getHomeHTML() {
       return `
@@ -628,7 +670,7 @@
       let contentHTML = '';
 
       if (state.facilityType === 'hoiku') {
-        contentHTML = facilities.map((f, i) => `
+        contentHTML = facilities.map(f => `
           <div class="bg-white border border-gray-200 p-5 rounded-xl shadow-sm flex flex-col animate-fade-in">
             <div class="flex justify-between items-start mb-3">
               <h3 class="text-xl font-bold text-orange-700">${f.name}</h3>
@@ -653,7 +695,7 @@
           </div>
         `).join('');
       } else if (state.facilityType === 'school') {
-        contentHTML = schools.map((s, i) => `
+        contentHTML = schools.map(s => `
           <div class="bg-white border border-gray-200 p-5 rounded-xl shadow-sm flex flex-col animate-fade-in">
             <div class="flex justify-between items-start mb-3">
               <h3 class="text-xl font-bold text-blue-700">${s.name}</h3>
@@ -690,7 +732,7 @@
           </div>
         `;
       } else if (state.facilityType === 'gakudo') {
-        contentHTML = gakudos.map((g, i) => `
+        contentHTML = gakudos.map(g => `
           <div class="bg-white border border-gray-200 p-5 rounded-xl shadow-sm flex flex-col animate-fade-in">
             <div class="flex justify-between items-start mb-3">
               <h3 class="text-xl font-bold text-green-700">${g.name}</h3>
@@ -1026,7 +1068,7 @@
 
       if (step === 1) {
         content = `
-          <div class="animate-fade-in w-full">
+          <div class="animate-fade-in w-full focus:outline-none" data-focus-target tabindex="-1">
             <h4 class="text-base font-bold text-gray-800 mb-3">Q1. 希望する施設はどちらですか？</h4>
             <div class="space-y-2 w-full">
               <button onclick="handleSimType('kindergarten')" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
@@ -1053,7 +1095,7 @@
           savedDay = String(parseInt(parts[2], 10));
         }
         content = `
-          <div class="animate-fade-in w-full">
+          <div class="animate-fade-in w-full focus:outline-none" data-focus-target tabindex="-1">
             <h4 class="text-base font-bold text-gray-800 mb-1">Q2. お子様の生年月日を入力してください</h4>
             <p class="text-xs text-gray-500 mb-3">※まだ生まれていないお子様の場合は、出産予定日でも構いません。</p>
             <div class="flex items-center gap-1 flex-wrap">
@@ -1078,7 +1120,7 @@
         `;
       } else if (step === 3) {
         content = `
-          <div class="animate-fade-in w-full">
+          <div class="animate-fade-in w-full focus:outline-none" data-focus-target tabindex="-1">
             <h4 class="text-base font-bold text-gray-800 mb-1">Q3. 保育を必要とする事由がありますか？</h4>
             <p class="text-xs text-gray-500 mb-3">※月60時間以上の就労、病気、介護、求職活動、妊娠・出産などが該当します。</p>
             <div class="space-y-2 w-full">
@@ -1093,7 +1135,7 @@
         `;
       } else if (step === 4) {
         content = `
-          <div class="animate-fade-in w-full">
+          <div class="animate-fade-in w-full focus:outline-none" data-focus-target tabindex="-1">
             <h4 class="text-base font-bold text-gray-800 mb-2">Q4. 世帯全員が住民税非課税ですか？</h4>
             <div class="space-y-2 w-full">
               <button onclick="handleSimTax('yes')" class="w-full p-3 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition flex justify-between items-center">
@@ -1107,7 +1149,7 @@
         `;
       } else if (step === 5) {
         content = `
-          <div class="animate-fade-in w-full">
+          <div class="animate-fade-in w-full focus:outline-none" data-focus-target tabindex="-1">
             ${getSimResultHTML()}
           </div>
         `;
@@ -1652,14 +1694,14 @@
     }
 
     // --- 子ども向け教室用関数 ---
-    window.handleClassSearch = function(value) {
+    function handleClassSearch(value) {
       state.classesSearch.keyword = value;
       const listContainer = document.getElementById('classes-list-container');
       if(listContainer) {
         listContainer.innerHTML = generateClassesListHTML();
         renderLucideIcons();
       }
-    };
+    }
 
     function generateClassesListHTML() {
       if (kidsClassesStatus === 'loading') {
@@ -1721,7 +1763,7 @@
       `}).join('');
     }
 
-    window.copyAndOpenLine = function() {
+    function copyAndOpenLine() {
       const name = document.getElementById('form-name').value.trim();
       const category = document.getElementById('form-category').value.trim();
       const age = document.getElementById('form-age').value.trim();
@@ -1766,7 +1808,7 @@
       const msg = document.getElementById('copy-message');
       msg.classList.remove('hidden');
       setTimeout(() => msg.classList.add('hidden'), 3000);
-    };
+    }
 
     function copyTextToClipboard(text) {
       if (navigator.clipboard && window.isSecureContext) {
@@ -1998,7 +2040,7 @@
       }
     }
 
-    window.loadKidsClasses = function() {
+    function loadKidsClasses() {
       setKidsClassesStatus('loading');
       // cdnjs.cloudflare.com からの PapaParse 本体の読み込みに失敗すると `Papa` 自体が未定義になるため、
       // typeof チェックと try/catch で、教室一覧以外の画面には影響させない。
@@ -2025,7 +2067,7 @@
         console.error('PapaParseの実行中にエラーが発生しました:', e);
         setKidsClassesStatus('error');
       }
-    };
+    }
 
     // ブラウザの「戻る」「進む」やURLの#の書き換えで画面を切り替える
     window.addEventListener('popstate', () => {
@@ -2036,6 +2078,10 @@
 
     // --- 初期化 ---
     window.addEventListener('DOMContentLoaded', () => {
+      // 著作権表示の年（公開開始の2026年〜今年）
+      const thisYear = new Date().getFullYear();
+      if (thisYear > 2026) document.getElementById('copyright-years').textContent = `2026–${thisYear}`;
+
       // URLの#以降（共有されたリンク等）から開く画面を決める
       applyHashToState();
       syncUrl('replace'); // 不正な#は正しい形に直す
@@ -2044,6 +2090,7 @@
       // （以前はCSVの読み込み完了まで画面全体が表示されなかった）
       renderApp();
       loadKidsClasses();
+      openDisclaimer();
     });
 
   </script>

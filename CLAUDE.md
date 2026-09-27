@@ -16,6 +16,8 @@
 - `index.html` — 画面の HTML・Tailwind クラス・JS（手続き・制度の説明文もここ）。
   - データ: 施設・学校・学童の一覧は `data/facilities.js`（`facilities` / `schools` / `gakudos` / `DATA_SOURCES`）。各項目の `source`（出典キー）と `checkedAt`（出典で確認した日）はカードに「出典：〇〇（確認日）」として表示される。**情報を変えたら出典で確認し checkedAt を更新する。確認していない項目は checkedAt: null のままにする**。`documentsData` / `reasonDocs` は index.html。`kidsClasses` は実行時に Google スプレッドシート CSV（`SPREADSHEET_CSV_URL`）で読み込む。
   - 画面: `state.activeTab` を切り替え、`renderApp()` が `#main-content` の innerHTML を丸ごと描き直す（`getHomeHTML` / `getFacilityHTML` / `getFlowHTML` / `getClassesHTML` / `getServicesHTML`）。
+  - 描き直しの前後でキーボードの操作位置（フォーカス）を保つ（`captureFocus` / `restoreFocus`）。操作する要素には `id` か `onclick` を付け、描き直しで要素が消える場合（簡易判定の次の質問など）は移動先の入れ物に `data-focus-target tabindex="-1"` を付ける。
+  - 免責事項ポップアップは `openDisclaimer()` で毎回表示し、表示中は背景を `inert` にする。
   - URL: 開いている画面を `#タブ/サブタブ`（例 `#flow/school`）で表す。タブを増やしたら `TAB_TITLES`、タブ内の切り替えを増やしたら `SUB_TABS` と `getSubTab`/`setSubTab` に追加する。
   - ピンチ拡大は禁止しない（`user-scalable=no` を戻さない）。iPhone の入力欄タップ時の自動拡大は、スマホ幅で入力欄を16pxにして防いでいる。
   - 学年・認定・日付の計算は `js/enrollment.js`（`getFiscalYearOf()`：4/2〜翌4/1 を1学年、`getEnrollmentTimeline()` など）。境界日（4/1・4/2 生まれ、2/29 生まれ、3歳の誕生日当日）を変えるときは `tests/enrollment.test.js` にテストを追加する。

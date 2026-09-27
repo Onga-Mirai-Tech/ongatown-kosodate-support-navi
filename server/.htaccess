@@ -26,8 +26,8 @@ Options -Indexes
 # セキュリティヘッダー
 # ---------------------------------------------------------------------
 <IfModule mod_headers.c>
-  # HSTS：まずは短め（1日）で開始し、問題がなければ max-age=31536000 に延ばす
-  Header always set Strict-Transport-Security "max-age=86400"
+  # HSTS：1年間は HTTPS でのみ接続させる（移行直後は1日で運用し、安定を確認して延長）
+  Header always set Strict-Transport-Security "max-age=31536000"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set X-Frame-Options "DENY"
