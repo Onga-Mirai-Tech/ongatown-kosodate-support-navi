@@ -32,6 +32,13 @@ AREAS = [('遠賀郡遠賀町', '遠賀町'), ('遠賀郡芦屋町', '芦屋町'
 # 掲載するサービス（入所施設は対象外）。表示順もこの順
 SERVICES = ['児童発達支援', '放課後等デイサービス', '保育所等訪問支援', '居宅訪問型児童発達支援', '障害児相談支援']
 
+# 県の一覧と町の公式サイトで情報が異なり、町の公式サイトを優先すると判断したもの（事業所名 → 上書き内容）。
+# phoneSource は data/facilities.js の DATA_SOURCES のキー（画面に「電話番号：〇〇より」と表示される）。
+OVERRIDES = {
+    # 県の一覧は 093-482-8498。町HP「放課後等デイサービス」の番号に合わせる（2026-09-28 判断）
+    '特別支援型子育て支援施設 にこにこクラブ': {'phone': '093-293-6588', 'phoneSource': 'townHoukagoDay'},
+}
+
 OUT = Path(__file__).resolve().parents[2] / 'data' / 'hattatsu.js'
 
 
@@ -88,6 +95,15 @@ def main():
     for f in items:
         f['services'].sort(key=SERVICES.index)
         f['phones'] = [{'phone': phone, 'services': sorted(svcs, key=SERVICES.index)} for phone, svcs in f['phones'].items()]
+        override = OVERRIDES.get(f['name'])
+        if override:
+            f['phones'] = [{'phone': override['phone'], 'services': list(f['services'])}]
+            f['phoneSource'] = override['phoneSource']
+
+    missing = set(OVERRIDES) - {f['name'] for f in items}
+    for name in sorted(missing):
+        # 県の一覧から消えた・名称が変わった場合は OVERRIDES の見直しが必要
+        print(f'警告: OVERRIDES の「{name}」が県の一覧に見つかりませんでした', file=sys.stderr)
 
     today = datetime.date.today().isoformat()
     lines = [

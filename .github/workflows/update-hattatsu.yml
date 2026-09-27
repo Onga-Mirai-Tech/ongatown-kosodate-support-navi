@@ -1,0 +1,101 @@
+# 毎月20日に、福岡県の指定事業所一覧（毎月20日頃更新）から発達支援の事業所一覧（data/hattatsu.js）を作り直し、
+# 内容に変更があれば Pull Request を作る。内容を確認してマージすると本番に反映される。
+# ※手動で実行する場合: Actions → 「発達支援の事業所一覧を更新」→ Run workflow
+# ※この PR は GitHub Actions が作るため、通常の Build & Deploy のチェックは自動では走らない。
+#   代わりにこのワークフローの中でテストとビルドを実行してから PR を作る。
+name: 発達支援の事業所一覧を更新
+
+on:
+  schedule:
+    - cron: '0 3 20 * *' # 毎月20日 12:00（日本時間）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-hattatsu
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.repository == 'Onga-Mirai-Tech/ongatown-kosodate-support-navi'
+    runs-on: ubuntu-latest
+    env:
+      BRANCH: auto/update-hattatsu
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: 県の一覧から作り直す
+        run: |
+          pip install openpyxl==3.1.5
+          cp data/hattatsu.js "$RUNNER_TEMP/hattatsu.old.js"
+          python3 scripts/hattatsu/update.py 2> "$RUNNER_TEMP/warnings.txt" || { cat "$RUNNER_TEMP/warnings.txt"; exit 1; }
+          cat "$RUNNER_TEMP/warnings.txt"
+
+      - name: 変更があるか確認（確認日 checkedAt だけの変更は無視）
+        id: diff
+        run: |
+          if git diff --quiet -I '"checkedAt"' -- data/hattatsu.js; then
+            echo "::notice::県の一覧に変更がないため、PR は作りません。"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.diff.outputs.changed == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: テストとビルド
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          npm ci
+          npm test
+          bash scripts/build.sh
+
+      - name: Pull Request を作る（既にあれば更新する）
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          AS_OF=$(grep -o '"asOf": "[^"]*"' data/hattatsu.js | cut -d'"' -f4)
+          {
+            echo "福岡県の指定事業所一覧（毎月20日頃更新）から、発達支援の事業所一覧を自動で作り直しました。"
+            echo "内容を確認してマージすると、本番に反映されます。"
+            echo
+            node scripts/hattatsu/diff-summary.js "$RUNNER_TEMP/hattatsu.old.js" data/hattatsu.js
+            echo
+            if [ -s "$RUNNER_TEMP/warnings.txt" ]; then
+              echo "### ⚠️ 警告"
+              sed 's/^/- /' "$RUNNER_TEMP/warnings.txt"
+              echo
+              echo "町の公式サイトに合わせて上書きしている事業所（scripts/hattatsu/update.py の OVERRIDES）が見つかりませんでした。見直してください。"
+              echo
+            fi
+            echo "- テスト（npm test）とビルドはこのワークフローの中で成功しています。"
+            echo "- 出典: https://www.pref.fukuoka.lg.jp/contents/shougaijishiteijigyousyo.html"
+            echo
+            echo "🤖 GitHub Actions（.github/workflows/update-hattatsu.yml）が自動で作成しました"
+          } > "$RUNNER_TEMP/body.md"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add data/hattatsu.js
+          git commit -m "発達支援の事業所一覧を更新（${AS_OF}）"
+          git push --force origin "$BRANCH"
+
+          TITLE="発達支援の事業所一覧を更新（${AS_OF}）"
+          if gh pr view "$BRANCH" --json state -q .state 2>/dev/null | grep -q OPEN; then
+            gh pr edit "$BRANCH" --title "$TITLE" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh pr create --base main --head "$BRANCH" --title "$TITLE" --body-file "$RUNNER_TEMP/body.md"
+          fi

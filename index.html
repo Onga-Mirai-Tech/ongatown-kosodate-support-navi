@@ -2009,6 +2009,7 @@
                 <i data-lucide="map-pin" class="h-4 w-4 mr-2 flex-shrink-0"></i> ${escapeHtml(f.address)}
               </a>
               ${phones}
+              ${f.phoneSource ? `<p class="text-xs text-gray-500">※電話番号は${DATA_SOURCES[f.phoneSource].label}による</p>` : ''}
             </div>
           </div>
         `;
@@ -2081,7 +2082,7 @@
           <section class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
             <h3 class="text-xl font-bold text-teal-800 mb-3 flex items-center"><i data-lucide="wallet" class="mr-2 h-6 w-6"></i> 費用について</h3>
             <ul class="text-sm text-gray-700 space-y-2 list-disc list-outside ml-5">
-              <li>利用料の自己負担には、世帯の収入などに応じて月ごとの上限額が決められています。食事代などは別にかかることがあります。</li>
+              <li>利用料は原則1割負担です。ただし、世帯の収入などに応じて月ごとの負担上限額が決められています。食事代などは別にかかることがあります。</li>
               <li>小学校入学前の3歳から5歳までの子どもの発達支援の利用料は、幼児教育・保育の無償化の対象です。</li>
             </ul>
             <p class="text-xs text-gray-600 mt-3">金額などの詳細は、町の窓口にご確認ください。</p>

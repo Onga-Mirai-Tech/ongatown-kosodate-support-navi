@@ -23,6 +23,7 @@ test('事業所: 地域・サービス・住所・電話番号の形式', () => 
     assert.ok(f.address.includes(f.area), `${f.name}: 住所に地域名が含まれていない`);
     assert.ok(f.services.length > 0 && f.services.every(s => services.includes(s)), `${f.name}: サービス種類`);
     assert.ok(f.phones.length > 0, `${f.name}: 電話番号がない`);
+    assert.ok(f.phoneSource === undefined || f.phoneSource in DATA_SOURCES, `${f.name}: phoneSource`);
     for (const p of f.phones) {
       assert.match(p.phone, /^0\d{1,4}-\d{1,4}-\d{3,4}$/, `${f.name}: 電話番号`);
       assert.ok(p.services.every(s => f.services.includes(s)), `${f.name}: 電話番号に対応するサービス`);

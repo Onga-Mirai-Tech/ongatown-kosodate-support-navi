@@ -232,12 +232,13 @@ const HATTATSU_DATA = {
       ],
       "phones": [
         {
-          "phone": "093-482-8498",
+          "phone": "093-293-6588",
           "services": [
             "放課後等デイサービス"
           ]
         }
-      ]
+      ],
+      "phoneSource": "townHoukagoDay"
     },
     {
       "name": "相談支援センター みらい",
