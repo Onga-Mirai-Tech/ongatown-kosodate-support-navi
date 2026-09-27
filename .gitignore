@@ -1,5 +1,7 @@
-# ビルド成果物（scripts/build.sh が生成）
+# ビルド成果物（scripts/build.sh / npm run build:css が生成）
 dist/
+assets/app.css
+node_modules/
 
 # 秘密情報（SSH鍵・接続情報はGitHub Secretsで管理し、絶対にコミットしない）
 .env

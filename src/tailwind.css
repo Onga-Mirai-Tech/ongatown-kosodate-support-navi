@@ -1,0 +1,36 @@
+/*
+  Tailwind CSS の入力ファイル。
+  npm run build:css（開発中は npm run dev:css）で assets/app.css を生成する。
+  クラス名は index.html / js/ / data/ から自動で検出される（tailwind.config.js の content）。
+  ※クラス名を文字列の連結（`bg-${color}-500` など）で作ると検出されないので、必ず完全な形で書くこと。
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* アニメーションとユーティリティクラス */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+/* iPhone（Safari）は文字サイズ16px未満の入力欄をタップすると自動で拡大するため、スマホ幅では16pxにする。
+   （以前は拡大そのものを禁止していたが、文字を拡大して読みたい利用者が拡大できなくなるため廃止） */
+@media (max-width: 767px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+/* 選択不可にするユーティリティ */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}

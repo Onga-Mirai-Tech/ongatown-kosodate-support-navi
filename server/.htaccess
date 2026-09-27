@@ -34,20 +34,21 @@ Options -Indexes
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
 
   # CSP：外部から読み込めるのは、index.html で使っているCDNと教室スプレッドシートのみ。
-  #  - script-src : Tailwind Play CDN / lucide(unpkg) / PapaParse(cdnjs)
+  #  - script-src : lucide(unpkg) / PapaParse(cdnjs)
   #                 ※インラインscriptとonclick属性を使っているため 'unsafe-inline' が必要
-  #  - style-src  : Tailwind Play CDN が実行時に<style>を注入するため 'unsafe-inline' が必要
+  #  - style-src  : 自サイトの assets/app.css のみ（Tailwind はビルド済み）
   #  - connect-src: 公開スプレッドシートCSV（docs.google.com → *.googleusercontent.com にリダイレクト）
   # CDNやデータ取得先を追加・変更したら、ここも必ず更新すること（更新漏れは画面崩れの原因になる）。
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
 </IfModule>
 
 # ---------------------------------------------------------------------
 # キャッシュ
-# HTMLは毎回サーバーに更新確認させ、修正した情報がすぐ利用者に届くようにする
+# HTML・JS・CSS（掲載データを含む）は毎回サーバーに更新確認させ、修正した情報がすぐ利用者に届くようにする
+# （変更が無ければ 304 が返るだけなので、通信量はほとんど増えない）
 # ---------------------------------------------------------------------
 <IfModule mod_headers.c>
-  <FilesMatch "\.html$">
+  <FilesMatch "\.(html|js|css)$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
 </IfModule>

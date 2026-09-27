@@ -1,0 +1,17 @@
+{
+  "name": "ongatown-kosodate-support-navi",
+  "private": true,
+  "description": "遠賀町 子育て支援ナビ（非公式）",
+  "license": "MIT",
+  "scripts": {
+    "build:css": "tailwindcss -i src/tailwind.css -o assets/app.css --minify",
+    "dev:css": "tailwindcss -i src/tailwind.css -o assets/app.css --watch",
+    "test": "TZ=Asia/Tokyo node --test 'tests/*.test.js' && TZ=America/Los_Angeles node --test 'tests/*.test.js'"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

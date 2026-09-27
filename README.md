@@ -19,28 +19,41 @@
 
 ## 技術構成
 
-ビルド不要の静的サイトです（`index.html` 1ファイル）。
+静的サイトです。CSS だけ Tailwind CSS でビルドします。
 
 | 用途 | ライブラリ |
 | --- | --- |
-| スタイル | [Tailwind CSS](https://tailwindcss.com/)（Play CDN） |
+| スタイル | [Tailwind CSS](https://tailwindcss.com/) v3（ビルド時に `assets/app.css` を生成） |
 | アイコン | [Lucide](https://lucide.dev/) |
 | CSV 読み込み | [Papa Parse](https://www.papaparse.com/) |
 
 ## ローカルで動かす
 
+Node.js 20 以上が必要です。
+
 ```bash
 git clone https://github.com/Onga-Mirai-Tech/ongatown-kosodate-support-navi.git
 cd ongatown-kosodate-support-navi
+npm install
+npm run dev:css            # CSS を生成し、変更を監視（別のターミナルで起動したままにする）
 python3 -m http.server 8000
 ```
 
 ブラウザで http://localhost:8000/ を開きます。
 
+```bash
+npm test                   # 自動テスト（学年計算・掲載データの形式）
+bash scripts/build.sh      # 公開用ファイルを dist/ に作成
+```
+
 ## ディレクトリ構成
 
 ```
-index.html                 アプリ本体（HTML / JavaScript / データ）
+index.html                 アプリ本体（画面の HTML / JavaScript）
+data/facilities.js         施設・学校・学童の一覧データ（出典・確認日つき）
+js/enrollment.js           学年・認定・日付の計算
+src/tailwind.css           CSS（Tailwind）の元ファイル
+tests/                     自動テスト（npm test）
 server/                    本番サーバー（Xserver）専用の .htaccess と 404 ページ
 ogp.png                    リンク共有時のカード画像（scripts/ogp/ で作成）
 scripts/build.sh           公開ファイルを dist/ に集め、最終更新日時を書き込むスクリプト
@@ -52,7 +65,8 @@ docs/deploy-xserver.md     デプロイ・移行手順
 
 ## 掲載情報について
 
-- 施設・学校・手続きの情報は `index.html` 内のデータ（`facilities` / `schools` / `gakudos` など）に直接書かれています。
+- 施設・学校・学童の一覧は `data/facilities.js` にあり、項目ごとに出典（`source`）と確認日（`checkedAt`）を持っています。画面の各カードにも「出典：〇〇（確認日）」として表示されます。
+- 手続きや制度の説明は `index.html` に書かれています。
 - 子ども向け教室の情報は、公開 Google スプレッドシートを CSV として実行時に読み込んでいます。スプレッドシートには教室運営者の連絡先が含まれるため、**CSV をリポジトリにコミットしないでください**。
 - 教室の掲載希望は、アプリ内のフォームから公式LINEで受け付けています。
 
