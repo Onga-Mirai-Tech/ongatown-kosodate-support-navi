@@ -16,6 +16,8 @@
 - `index.html` — アプリのすべて（HTML / Tailwind クラス / JS / データ）。ビルド不要。
   - データ: `facilities` / `schools` / `gakudos` / `documentsData` / `reasonDocs`（ファイル上部）、`kidsClasses` は実行時に Google スプレッドシート CSV（`SPREADSHEET_CSV_URL`）で上書き。
   - 画面: `state.activeTab` を切り替え、`renderApp()` が `#main-content` の innerHTML を丸ごと描き直す（`getHomeHTML` / `getFacilityHTML` / `getFlowHTML` / `getClassesHTML` / `getServicesHTML`）。
+  - URL: 開いている画面を `#タブ/サブタブ`（例 `#flow/school`）で表す。タブを増やしたら `TAB_TITLES`、タブ内の切り替えを増やしたら `SUB_TABS` と `getSubTab`/`setSubTab` に追加する。
+  - ピンチ拡大は禁止しない（`user-scalable=no` を戻さない）。iPhone の入力欄タップ時の自動拡大は、スマホ幅で入力欄を16pxにして防いでいる。
   - 学年・認定の計算: `getFiscalYearOf()`（4/2〜翌4/1 を1学年）と `getEnrollmentTimeline()`。ここを触るときは境界日（4/1・4/2 生まれ、2/29 生まれ、3歳の誕生日当日）を必ず確認する。
   - ヘッダーの「最終更新」日時は `scripts/build.sh` がデプロイ時に自動で書き込む（`index.html` が最後に main に反映された日時、日本時間）。ソース中の `<!--LAST_UPDATED-->…<!--/LAST_UPDATED-->` は手で書き換えない。
   - リンク共有時のカード（OGP）: `<head>` の `og:*` メタタグと `ogp.png`（1200x630）。画像は `scripts/ogp/ogp.html` を編集し `bash scripts/ogp/generate.sh`（Google Chrome が必要）で作り直す。
