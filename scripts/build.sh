@@ -7,16 +7,23 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# 公開するファイル・ディレクトリ
 PUBLIC_FILES=(
   index.html
   ogp.png
+  js
+  data
+  assets
 )
+
+# Tailwind CSS をビルドして assets/app.css を作る（要 npm ci / npm install）
+npm run --silent build:css
 
 rm -rf dist
 mkdir -p dist
 
 for f in "${PUBLIC_FILES[@]}"; do
-  cp "$f" "dist/$f"
+  cp -R "$f" "dist/$f"
 done
 
 # ヘッダーの「最終更新」に、index.html が最後に main に反映された日時（日本時間）を書き込む。

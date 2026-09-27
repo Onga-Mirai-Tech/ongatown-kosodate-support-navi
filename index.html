@@ -20,40 +20,13 @@
   <meta property="og:image:alt" content="福岡県遠賀町 子育て支援ナビ（個人開発の非公式アプリ）">
   <meta name="twitter:card" content="summary_large_image">
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- スタイル（Tailwind CSS）。src/tailwind.css から npm run build:css で assets/app.css を生成する -->
+  <link rel="stylesheet" href="assets/app.css">
   <!-- lucideはバージョン固定（@latestは将来アイコン名の変更等で予告なく壊れる可能性があるため） -->
   <script src="https://unpkg.com/lucide@1.28.0"></script>
   <!-- スプレッドシート読み込み（CSV解析）用ライブラリ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   
-  <style>
-    /* アニメーションとユーティリティクラス */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in {
-      animation: fadeIn 0.3s ease-out forwards;
-    }
-    .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-    .hide-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .hide-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-    /* iPhone（Safari）は文字サイズ16px未満の入力欄をタップすると自動で拡大するため、スマホ幅では16pxにする。
-       （以前は拡大そのものを禁止していたが、文字を拡大して読みたい利用者が拡大できなくなるため廃止） */
-    @media (max-width: 767px) {
-      input, select, textarea { font-size: 16px !important; }
-    }
-    /* 選択不可にするユーティリティ */
-    .no-select {
-      -webkit-user-select: none;
-      user-select: none;
-    }
-  </style>
 </head>
 <body class="bg-gray-50 flex flex-col font-sans min-h-screen overflow-x-hidden">
 
@@ -178,6 +151,10 @@
     </div>
   </nav>
 
+  <!-- データと計算ロジック（アプリ本体より先に読み込む） -->
+  <script src="data/facilities.js"></script>
+  <script src="js/enrollment.js"></script>
+
   <!-- Application Logic -->
   <script>
     // ==========================================
@@ -187,28 +164,7 @@
     // ==========================================
 
     // --- データ定義 ---
-    const facilities = [
-      { name: '遠賀川保育園', type: '保育園', address: '遠賀川二丁目6番22号', capacity: '140名', age: '生後3ヶ月〜', time: '7:00〜18:00 (延長19:00)', phone: '093-293-0184', url: 'https://www.ongagawa-hoikuen.com/' },
-      { name: '南部保育園', type: '保育園', address: '浅木二丁目19番27号', capacity: '160名', age: '生後3ヶ月〜', time: '7:00〜18:00 (延長19:00)', phone: '093-293-2256', url: 'https://www.ans.co.jp/n/nanbuhoikuen/' },
-      { name: '山びこ保育園', type: '保育園', address: '島門1番13号', capacity: '140名', age: '生後6ヶ月〜', time: '7:00〜18:00 (延長19:00)', phone: '093-293-2227', url: 'https://yamabiko-onga.com/' },
-      { name: '遠賀中央幼稚園', type: '幼稚園型認定こども園', address: '島門3番1号', capacity: '170名', age: '1歳児〜(保育)/2歳児〜(教育)', time: '7:30〜18:30(保育)/10:00〜14:00(教育)', phone: '093-293-0097', url: 'https://www.ongachuou.com/' },
-      { name: '愛あい保育園', type: '事業所内保育所', address: '木守1185番地 (健愛記念病院内)', capacity: '19名', age: '生後8ヶ月〜2歳児', time: '7:30〜18:30 (延長なし)', phone: '093-293-1915', url: 'https://www.kenai.or.jp/facilities/aiai.html' },
-      { name: 'モクセイ保育園', type: '企業主導型保育施設', address: '若松438番地の1', capacity: '31名', age: '生後5ヶ月〜', time: '7:00〜20:00 (365日開園)', phone: '093-482-8620', url: 'https://www.instagram.com/mokuseihoikuen/' },
-    ];
-
-    const schools = [
-      { name: '広渡小学校', type: '小学校', address: '大字広渡1930番地', area: '旧停(旧停一丁目〜二丁目)<br>広渡(広渡一丁目、大字広渡、道官)<br>新町(遠賀川二丁目〜三丁目)<br>中央(広渡一丁目)<br>遠賀川(遠賀川一丁目〜二丁目)<br>松の本(松の本一丁目〜七丁目)', phone: '093-293-3711' },
-      { name: '浅木小学校', type: '小学校', address: '浅木二丁目3番7号', area: '木守(大字木守)<br>浅木(大字浅木、浅木二丁目〜三丁目)<br>老良(大字老良)<br>芙蓉(芙蓉一丁目〜二丁目)<br>東和苑(浅木一丁目〜二丁目)<br>虫生津(大字虫生津、虫生津南)<br>上別府(大字上別府、蓮角)<br>若葉台(若葉台)<br>緑ヶ丘(虫生津南)<br>駅みなみ', phone: '093-293-0009' },
-      { name: '島門小学校', type: '小学校', address: '大字鬼津1058番地', area: '島津(大字島津)<br>若松(大字若松)<br>鬼津(大字鬼津)<br>別府(大字別府、島門、千代丸)<br>尾崎(大字尾崎)<br>今古賀(大字今古賀)<br>田園北(田園三丁目)<br>田園南(田園一丁目〜二丁目)', phone: '093-293-0004' },
-      { name: '遠賀中学校', type: '中学校', address: '大字広渡289番地', area: '広渡小学校区、島門小学校区', phone: '093-293-1323' },
-      { name: '遠賀南中学校', type: '中学校', address: '浅木二丁目2番2号', area: '浅木小学校区', phone: '093-293-1324' }
-    ];
-
-    const gakudos = [
-      { name: '広小ひまわりクラブ', desc: '広渡小学校内', address: '大字広渡1930番地', phone: '093-293-1910' },
-      { name: '遠賀南学童保育クラブ', desc: '浅木小学校内', address: '浅木二丁目2番1号', phone: '093-293-0079' },
-      { name: '遠賀北学童保育クラブ', desc: '島門小学校内', address: '大字鬼津1031番地の1', phone: '093-293-6531' }
-    ];
+    // 施設・学校の一覧（facilities / schools / gakudos / DATA_SOURCES）は data/facilities.js にある
 
     // 教室情報はスプレッドシート（SPREADSHEET_CSV_URL）から読み込む。
     // 読み込みに失敗したときに架空のサンプルを表示すると実在の教室と誤解されるため、内蔵データは持たない。
@@ -294,6 +250,14 @@
         a = '福岡県遠賀郡遠賀町' + a;
       }
       return 'https://maps.google.com/?q=' + encodeURIComponent(a);
+    }
+
+    // 施設・学校カードの下部に「出典：〇〇（YYYY年M月D日確認）」を表示する（data/facilities.js の source / checkedAt）
+    function sourceNoteHTML(item) {
+      const src = item.source && DATA_SOURCES[item.source];
+      if (!src) return '';
+      const checked = item.checkedAt ? `（${formatDateJp(parseLocalDate(item.checkedAt))}確認）` : '';
+      return `<p class="mt-3 text-xs text-gray-500">出典：<a href="${src.url}" target="_blank" rel="noopener noreferrer" class="underline hover:text-gray-700">${src.label}</a>${checked}</p>`;
     }
 
     // --- 免責事項ポップアップ制御 ---
@@ -439,88 +403,12 @@
       }
     }
 
-    // --- 生年月日ベースの計算ロジック（共通） ---
-    // 4月2日〜翌年4月1日を1年度とする、日本の学齢区切りルール。
-    // （4/1生まれは前年度扱いになる点に注意。民法上、年齢は誕生日の前日に加算されるため）
-    function getFiscalYearOf(date) {
-      let y = date.getFullYear();
-      const m = date.getMonth(); // 0-indexed
-      const d = date.getDate();
-      if (m < 3 || (m === 3 && d === 1)) {
-        y--;
-      }
-      return y;
-    }
-
-    // 'YYYY-MM-DD' を端末のローカル日付として解釈する。
-    // new Date('YYYY-MM-DD') はUTCとして解釈されるため、日本より時刻が遅れているタイムゾーンの端末
-    // （海外在住・帰国予定の家庭など）では前日扱いになり、4/2生まれが4/1生まれ（=1学年上）と判定されてしまう。
-    function parseLocalDate(dateStr) {
-      const [y, m, d] = dateStr.split('-').map(Number);
-      return new Date(y, m - 1, d);
-    }
-
-    function formatDateJp(date) {
-      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
-    }
-    function formatYearMonthJp(date) {
-      return `${date.getFullYear()}年${date.getMonth() + 1}月`;
-    }
-
-    // 生年月日から、現在の学年区分・満3歳の誕生日・認定切替日などを算出する共通関数。
-    // ホーム画面の早見表、シミュレーター（幼稚園・保育園どちらも）から利用する。
-    function getEnrollmentTimeline(dateStr, todayDate) {
-      const birthDate = parseLocalDate(dateStr);
-      const today = todayDate || new Date();
-
-      const cohortYear = getFiscalYearOf(birthDate);
-      const currentFiscalYear = getFiscalYearOf(today);
-      const currentFYAge = currentFiscalYear - cohortYear; // 今年度中に迎える年齢
-
-      // 満3歳の誕生日
-      // ※認定の切り替え日（誕生日の翌月から等）や幼稚園に入園できる時期は、町の公開資料で確認できないため算出しない
-      const man3Date = new Date(birthDate);
-      man3Date.setFullYear(man3Date.getFullYear() + 3);
-      const hasTurnedMan3 = today.getTime() >= man3Date.getTime();
-
-      let classLabel = '';
-      if (currentFYAge <= 0) classLabel = '0歳児クラスになる前';
-      else if (currentFYAge === 1) classLabel = '0歳児クラス';
-      else if (currentFYAge === 2) classLabel = '1歳児クラス';
-      else if (currentFYAge === 3) classLabel = '2歳児クラス';
-      else if (currentFYAge === 4) classLabel = '3歳児クラス（年少）';
-      else if (currentFYAge === 5) classLabel = '4歳児クラス（年中）';
-      else if (currentFYAge === 6) classLabel = '5歳児クラス（年長）';
-      else if (currentFYAge >= 7 && currentFYAge <= 12) classLabel = `小学${currentFYAge - 6}年生`;
-      else if (currentFYAge >= 13 && currentFYAge <= 15) classLabel = `中学${currentFYAge - 12}年生`;
-      else classLabel = '中学卒業以降';
-
-      const isInfantClass = currentFYAge <= 2;                     // 0〜1歳児クラス（クラス編成前を含む）
-      const isTwoYearOldClass = currentFYAge === 3;                // 2歳児クラス
-      const isOver3Class = currentFYAge >= 4 && currentFYAge <= 6; // 3〜5歳児クラス
-      const isSchoolAge = currentFYAge >= 7;                       // 就学年齢以上（本ツールの対象外）
-
-      // 参考情報として「2歳児クラスになる年度の4月1日」と、
-      // 保育園の保育料が無償化される「3歳児クラスになる年度の4月1日」も算出
-      const twoYearOldClassStart = new Date(cohortYear + 3, 3, 1);
-      const threeYearOldClassStart = new Date(cohortYear + 4, 3, 1);
-
-      return {
-        birthDate, cohortYear, currentFYAge, classLabel,
-        man3Date, hasTurnedMan3,
-        isInfantClass, isTwoYearOldClass, isOver3Class, isSchoolAge,
-        twoYearOldClassStart, threeYearOldClassStart
-      };
-    }
+    // 学年・認定・日付の計算（getFiscalYearOf / getEnrollmentTimeline など）は js/enrollment.js にある
 
     // --- 生年月日プルダウン（年・月・日）の共通ヘルパー ---
     // カレンダーUIでの直接入力がしづらい端末（特にスマートフォン）でも
     // 数字を選ぶだけで入力できるよう、年・月・日を独立したプルダウンにする。
-    function getDaysInMonth(year, month) {
-      // month: 1〜12。年・月が未選択の場合は31日まで許容しておく
-      if (!year || !month) return 31;
-      return new Date(Number(year), Number(month), 0).getDate();
-    }
+    // （月の日数 getDaysInMonth は js/enrollment.js）
 
     function generateYearOptionsHTML(selectedYear) {
       const currentYear = new Date().getFullYear();
@@ -581,38 +469,23 @@
       const birthDate = parseLocalDate(dateStr);
       const cohortYear = getFiscalYearOf(birthDate);
       
-      // 年度（4月始まり）ベースの元号表示。
-      // 令和は2019年度〜、平成は1989年度〜2018年度、それより前は元号を付けない。
-      // ※厳密には令和への改元は2019年5月1日だが、行政の「年度」表記では
-      //   2019年度は令和元年度として扱われるのが一般的なため、年度単位で判定する。
-      const formatYear = (y) => {
-        let eraLabel = '';
-        if (y >= 2019) {
-          const wareki = y - 2018;
-          eraLabel = `令和${wareki === 1 ? '元' : wareki}`;
-        } else if (y >= 1989) {
-          const wareki = y - 1988;
-          eraLabel = `平成${wareki === 1 ? '元' : wareki}`;
-        }
-        return eraLabel ? `${y}（${eraLabel}）年度` : `${y}年度`;
-      };
       
       const schedule = [
-        { label: '0歳児', desc: '年度中に1歳になる', yearStr: formatYear(cohortYear + 1) },
-        { label: '1歳児', desc: '年度中に2歳になる', yearStr: formatYear(cohortYear + 2) },
-        { label: '2歳児（満3歳児含む）', desc: '年度中に3歳になる', yearStr: formatYear(cohortYear + 3) },
-        { label: '3歳児（年少）', desc: '年度中に4歳になる', yearStr: formatYear(cohortYear + 4) },
-        { label: '4歳児（年中）', desc: '年度中に5歳になる', yearStr: formatYear(cohortYear + 5) },
-        { label: '5歳児（年長）', desc: '年度中に6歳になる', yearStr: formatYear(cohortYear + 6) },
-        { label: '小学校1年生', desc: '年度中に7歳になる', yearStr: formatYear(cohortYear + 7) },
-        { label: '小学校2年生', desc: '年度中に8歳になる', yearStr: formatYear(cohortYear + 8) },
-        { label: '小学校3年生', desc: '年度中に9歳になる', yearStr: formatYear(cohortYear + 9) },
-        { label: '小学校4年生', desc: '年度中に10歳になる', yearStr: formatYear(cohortYear + 10) },
-        { label: '小学校5年生', desc: '年度中に11歳になる', yearStr: formatYear(cohortYear + 11) },
-        { label: '小学校6年生', desc: '年度中に12歳になる', yearStr: formatYear(cohortYear + 12) },
-        { label: '中学校1年生', desc: '年度中に13歳になる', yearStr: formatYear(cohortYear + 13) },
-        { label: '中学校2年生', desc: '年度中に14歳になる', yearStr: formatYear(cohortYear + 14) },
-        { label: '中学校3年生', desc: '年度中に15歳になる', yearStr: formatYear(cohortYear + 15) }
+        { label: '0歳児', desc: '年度中に1歳になる', yearStr: formatFiscalYearJp(cohortYear + 1) },
+        { label: '1歳児', desc: '年度中に2歳になる', yearStr: formatFiscalYearJp(cohortYear + 2) },
+        { label: '2歳児（満3歳児含む）', desc: '年度中に3歳になる', yearStr: formatFiscalYearJp(cohortYear + 3) },
+        { label: '3歳児（年少）', desc: '年度中に4歳になる', yearStr: formatFiscalYearJp(cohortYear + 4) },
+        { label: '4歳児（年中）', desc: '年度中に5歳になる', yearStr: formatFiscalYearJp(cohortYear + 5) },
+        { label: '5歳児（年長）', desc: '年度中に6歳になる', yearStr: formatFiscalYearJp(cohortYear + 6) },
+        { label: '小学校1年生', desc: '年度中に7歳になる', yearStr: formatFiscalYearJp(cohortYear + 7) },
+        { label: '小学校2年生', desc: '年度中に8歳になる', yearStr: formatFiscalYearJp(cohortYear + 8) },
+        { label: '小学校3年生', desc: '年度中に9歳になる', yearStr: formatFiscalYearJp(cohortYear + 9) },
+        { label: '小学校4年生', desc: '年度中に10歳になる', yearStr: formatFiscalYearJp(cohortYear + 10) },
+        { label: '小学校5年生', desc: '年度中に11歳になる', yearStr: formatFiscalYearJp(cohortYear + 11) },
+        { label: '小学校6年生', desc: '年度中に12歳になる', yearStr: formatFiscalYearJp(cohortYear + 12) },
+        { label: '中学校1年生', desc: '年度中に13歳になる', yearStr: formatFiscalYearJp(cohortYear + 13) },
+        { label: '中学校2年生', desc: '年度中に14歳になる', yearStr: formatFiscalYearJp(cohortYear + 14) },
+        { label: '中学校3年生', desc: '年度中に15歳になる', yearStr: formatFiscalYearJp(cohortYear + 15) }
       ];
       
       let tableRows = schedule.map(item => `
@@ -634,7 +507,7 @@
           <table class="w-full text-sm text-left min-w-max">
             <thead class="bg-gray-100 text-gray-700">
               <tr>
-                <th class="px-3 py-2 font-bold border-b border-gray-200 border-r border-gray-100">学年・クラス</th>
+                <th class="px-3 py-2 font-bold border-b border-b-gray-200 border-r border-r-gray-100">学年・クラス</th>
                 <th class="px-3 py-2 font-bold border-b border-gray-200 text-center w-36">該当年度(4月〜)</th>
               </tr>
             </thead>
@@ -765,6 +638,7 @@
                <a href="${f.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-medium text-orange-600 hover:text-orange-800 transition">
                  <i data-lucide="globe" class="h-4 w-4 mr-1"></i> ${f.url.includes('instagram.com') ? '公式Instagramを見る' : '公式サイトを見る'}
                </a>
+               ${sourceNoteHTML(f)}
             </div>
           </div>
         `).join('');
@@ -783,13 +657,14 @@
                 <i data-lucide="map" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> 
                 <div>
                   <span class="font-bold text-xs text-gray-500 block">対象校区・地域:</span>
-                  <p class="text-xs leading-relaxed">${s.area}</p>
+                  <p class="text-xs leading-relaxed">${s.area.join('<br>')}</p>
                 </div>
               </div>
               <a href="tel:${s.phone.replace(/-/g, '')}" class="flex items-center text-blue-600 hover:text-blue-800 hover:underline w-fit">
                 <i data-lucide="phone" class="h-4 w-4 mr-2 text-gray-400 flex-shrink-0"></i> ${s.phone}
               </a>
             </div>
+            ${sourceNoteHTML(s)}
           </div>
         `).join('');
         
@@ -820,6 +695,7 @@
                 <i data-lucide="phone" class="h-4 w-4 mr-2 text-gray-400 flex-shrink-0"></i> ${g.phone}
               </a>
             </div>
+            ${sourceNoteHTML(g)}
           </div>
         `).join('');
 
