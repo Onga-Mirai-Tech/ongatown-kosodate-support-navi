@@ -42,7 +42,9 @@ python3 -m http.server 8000
 ```
 index.html                 アプリ本体（HTML / JavaScript / データ）
 server/                    本番サーバー（Xserver）専用の .htaccess と 404 ページ
-scripts/build.sh           公開ファイルを dist/ に集めるスクリプト
+ogp.png                    リンク共有時のカード画像（scripts/ogp/ で作成）
+scripts/build.sh           公開ファイルを dist/ に集め、最終更新日時を書き込むスクリプト
+scripts/ogp/               カード画像の元デザインと作成スクリプト
 pages-redirect/            旧URL（GitHub Pages）から新URLへの転送ページ
 docs/deploy-xserver.md     デプロイ・移行手順
 .github/workflows/         ビルド・デプロイの GitHub Actions

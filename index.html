@@ -4,7 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>遠賀町 子育て支援ナビ</title>
-  
+  <meta name="description" content="福岡県遠賀町の保育園・幼稚園・学童保育・小中学校の情報、教育・保育給付認定の目安、入園・入学の手続きの流れをまとめた非公式の子育て支援アプリです。">
+  <link rel="canonical" href="https://ongatown-kosodate-support-navi.onga-mirai-tech.com/">
+
+  <!-- リンクを貼り付けたときに表示されるカード（OGP）。画像は scripts/ogp/ で作成 -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:site_name" content="遠賀町 子育て支援ナビ">
+  <meta property="og:title" content="遠賀町 子育て支援ナビ（非公式）">
+  <meta property="og:description" content="保育園・学校の情報、給付認定の目安、入園・入学の手続き、子ども向け教室を、遠賀町の子育て家庭向けにまとめました。">
+  <meta property="og:url" content="https://ongatown-kosodate-support-navi.onga-mirai-tech.com/">
+  <meta property="og:image" content="https://ongatown-kosodate-support-navi.onga-mirai-tech.com/ogp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="福岡県遠賀町 子育て支援ナビ（個人開発の非公式アプリ）">
+  <meta name="twitter:card" content="summary_large_image">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- lucideはバージョン固定（@latestは将来アイコン名の変更等で予告なく壊れる可能性があるため） -->
   <script src="https://unpkg.com/lucide@1.28.0"></script>
@@ -64,12 +79,14 @@
   <header class="bg-orange-500 text-white shadow-md sticky top-0 z-40">
     <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
       <h1 class="text-xl font-bold flex items-center cursor-pointer no-select" onclick="switchTab('home')">
-        <i data-lucide="baby" class="mr-2 h-6 w-6"></i>
-        遠賀町 子育て支援ナビ
-        <span class="ml-3 px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm hidden sm:inline-block">v2.0.2</span>
+        <i data-lucide="baby" class="mr-2 h-6 w-6 flex-shrink-0"></i>
+        <span class="flex flex-col sm:flex-row sm:items-center">
+          <span>遠賀町 子育て支援ナビ</span>
+          <!-- 最終更新日時は scripts/build.sh がデプロイ時に index.html の最終更新（git）から自動で書き込む。手で書き換えない -->
+          <span class="mt-1 sm:mt-0 sm:ml-3 w-fit px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm whitespace-nowrap">最終更新 <!--LAST_UPDATED-->（ローカル表示）<!--/LAST_UPDATED--></span>
+        </span>
       </h1>
       <div class="flex items-center gap-2">
-        <span class="px-2 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200 shadow-sm sm:hidden">v2.0.2</span>
         <a href="https://www.town.onga.lg.jp/life/3/" target="_blank" rel="noopener noreferrer" class="text-xs flex items-center bg-orange-600 px-3 py-1.5 rounded-full hover:bg-orange-700 transition no-select">
           町公式HP <i data-lucide="external-link" class="ml-1 h-3 w-3"></i>
         </a>
@@ -188,11 +205,10 @@
       { name: '遠賀北学童保育クラブ', desc: '島門小学校内', address: '大字鬼津1031番地の1', phone: '093-293-6531' }
     ];
 
-    // 教室情報のデータベース
-    let kidsClasses = [
-      { name: '【サンプル】遠賀ドリームサッカークラブ', category: 'スポーツ', target: '年中〜小学6年生', location: '遠賀総合運動公園', address: '広渡23-6', schedule: '毎週水・金 16:30〜18:00', phone: '090-0000-0000', link: '' },
-      { name: '【サンプル】みらいキッズダンス', category: 'ダンス', target: '3歳〜中学生', location: 'おんがみらいテラス', address: '遠賀川一丁目1番2号', schedule: '毎週土 10:00〜12:00', phone: '', link: 'https://www.instagram.com/mirai_dance_onga' },
-    ];
+    // 教室情報はスプレッドシート（SPREADSHEET_CSV_URL）から読み込む。
+    // 読み込みに失敗したときに架空のサンプルを表示すると実在の教室と誤解されるため、内蔵データは持たない。
+    let kidsClasses = [];
+    let kidsClassesStatus = 'loading'; // 'loading' | 'loaded' | 'error'
 
     const documentsData = [
       { 
@@ -253,6 +269,26 @@
         return '';
       }
       return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    }
+
+    // Googleマップ検索用のURLを作る。
+    // 住所は「島門3番1号」のような町内の略記と、「福岡県遠賀郡遠賀町島門3−1」「遠賀町浅木2丁目」
+    // のような自治体名から始まる表記が混在する（教室情報はスプレッドシートの入力そのまま）ため、
+    // すでに書かれている部分は重ねて付けない。複数住所が「、」区切りで書かれている場合は先頭のみを使う。
+    const NEARBY_TOWNS = ['遠賀町', '芦屋町', '水巻町', '岡垣町'];
+    const NEARBY_CITIES = ['北九州市', '中間市', '宗像市', '直方市'];
+    function buildMapUrl(address) {
+      let a = String(address || '').split(/[、,，／]/)[0].trim();
+      if (/^福岡県/.test(a)) {
+        // そのまま
+      } else if (/^遠賀郡/.test(a) || NEARBY_CITIES.some(c => a.startsWith(c))) {
+        a = '福岡県' + a;
+      } else if (NEARBY_TOWNS.some(t => a.startsWith(t))) {
+        a = '福岡県遠賀郡' + a;
+      } else {
+        a = '福岡県遠賀郡遠賀町' + a;
+      }
+      return 'https://maps.google.com/?q=' + encodeURIComponent(a);
     }
 
     // --- 免責事項ポップアップ制御 ---
@@ -350,6 +386,14 @@
       return y;
     }
 
+    // 'YYYY-MM-DD' を端末のローカル日付として解釈する。
+    // new Date('YYYY-MM-DD') はUTCとして解釈されるため、日本より時刻が遅れているタイムゾーンの端末
+    // （海外在住・帰国予定の家庭など）では前日扱いになり、4/2生まれが4/1生まれ（=1学年上）と判定されてしまう。
+    function parseLocalDate(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+
     function formatDateJp(date) {
       return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
     }
@@ -360,7 +404,7 @@
     // 生年月日から、現在の学年区分・満3歳の誕生日・認定切替日などを算出する共通関数。
     // ホーム画面の早見表、シミュレーター（幼稚園・保育園どちらも）から利用する。
     function getEnrollmentTimeline(dateStr, todayDate) {
-      const birthDate = new Date(dateStr);
+      const birthDate = parseLocalDate(dateStr);
       const today = todayDate || new Date();
 
       const cohortYear = getFiscalYearOf(birthDate);
@@ -466,7 +510,7 @@
         return;
       }
       
-      const birthDate = new Date(dateStr);
+      const birthDate = parseLocalDate(dateStr);
       const cohortYear = getFiscalYearOf(birthDate);
       
       // 年度（4月始まり）ベースの元号表示。
@@ -639,7 +683,7 @@
               <span class="text-xs font-semibold px-2 py-1 bg-orange-100 text-orange-800 rounded-full">${f.type}</span>
             </div>
             <div class="space-y-2 text-sm text-gray-700 flex-grow">
-              <a href="https://maps.google.com/?q=${encodeURIComponent('福岡県遠賀郡遠賀町' + f.address)}" target="_blank" rel="noopener noreferrer" class="flex items-center text-blue-600 hover:underline hover:text-blue-800 transition p-1 -ml-1 rounded w-fit">
+              <a href="${buildMapUrl(f.address)}" target="_blank" rel="noopener noreferrer" class="flex items-center text-blue-600 hover:underline hover:text-blue-800 transition p-1 -ml-1 rounded w-fit">
                 <i data-lucide="map-pin" class="h-4 w-4 mr-2 flex-shrink-0"></i> ${f.address}
               </a>
               <p class="flex"><i data-lucide="baby" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> 受入年齢: ${f.age} / 定員: ${f.capacity}</p>
@@ -663,7 +707,7 @@
               <span class="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-800 rounded-full">${s.type}</span>
             </div>
             <div class="space-y-2 text-sm text-gray-700 flex-grow">
-              <a href="https://maps.google.com/?q=${encodeURIComponent('福岡県遠賀郡遠賀町' + s.address)}" target="_blank" rel="noopener noreferrer" class="flex items-center text-blue-600 hover:underline hover:text-blue-800 transition p-1 -ml-1 rounded w-fit">
+              <a href="${buildMapUrl(s.address)}" target="_blank" rel="noopener noreferrer" class="flex items-center text-blue-600 hover:underline hover:text-blue-800 transition p-1 -ml-1 rounded w-fit">
                 <i data-lucide="map-pin" class="h-4 w-4 mr-2 flex-shrink-0"></i> ${s.address}
               </a>
               <div class="flex bg-gray-50 p-2 rounded border border-gray-100 mt-2 mb-2">
@@ -700,7 +744,7 @@
             </div>
             <p class="text-sm font-bold text-gray-600 mb-3 bg-gray-100 px-2 py-1 rounded inline-block w-fit">${g.desc}</p>
             <div class="space-y-2 text-sm text-gray-700 flex-grow">
-              <a href="https://maps.google.com/?q=${encodeURIComponent('福岡県遠賀郡遠賀町' + g.address)}" target="_blank" rel="noopener noreferrer" class="flex items-center text-blue-600 hover:underline hover:text-blue-800 transition p-1 -ml-1 rounded w-fit">
+              <a href="${buildMapUrl(g.address)}" target="_blank" rel="noopener noreferrer" class="flex items-center text-blue-600 hover:underline hover:text-blue-800 transition p-1 -ml-1 rounded w-fit">
                 <i data-lucide="map-pin" class="h-4 w-4 mr-2 flex-shrink-0"></i> ${g.address}
               </a>
               <a href="tel:${g.phone.replace(/-/g, '')}" class="flex items-center text-green-600 hover:text-green-800 hover:underline w-fit">
@@ -1643,8 +1687,23 @@
     };
 
     function generateClassesListHTML() {
+      if (kidsClassesStatus === 'loading') {
+        return `<div class="col-span-1 lg:col-span-2 p-8 text-center text-gray-500 bg-white border border-gray-200 rounded-xl shadow-sm flex items-center justify-center"><i data-lucide="loader-2" class="h-4 w-4 mr-2 animate-spin"></i>教室情報を読み込んでいます...</div>`;
+      }
+      if (kidsClassesStatus === 'error') {
+        return `
+          <div class="col-span-1 lg:col-span-2 p-6 text-center bg-white border border-red-200 rounded-xl shadow-sm">
+            <p class="text-sm font-bold text-red-700 flex items-center justify-center mb-2"><i data-lucide="alert-circle" class="h-4 w-4 mr-1.5"></i>教室情報を読み込めませんでした</p>
+            <p class="text-xs text-gray-600 mb-4">通信状況をご確認のうえ、再度お試しください。</p>
+            <button onclick="loadKidsClasses()" class="inline-flex items-center text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-full shadow-sm transition">
+              <i data-lucide="rotate-ccw" class="h-4 w-4 mr-1.5"></i>再読み込み
+            </button>
+          </div>
+        `;
+      }
+
       const keyword = state.classesSearch.keyword.toLowerCase();
-      
+
       const filtered = kidsClasses.filter(c => {
         return (c.name && c.name.toLowerCase().includes(keyword)) || 
                (c.category && c.category.toLowerCase().includes(keyword)) ||
@@ -1682,7 +1741,7 @@
               <i data-lucide="map-pin" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> 
               <div>
                 <span>${escapeHtml(c.location) || '-'}</span><br>
-                ${c.address ? `<a href="https://maps.google.com/?q=${encodeURIComponent('福岡県遠賀郡遠賀町' + c.address)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:underline inline-flex items-center mt-0.5"><i data-lucide="map" class="h-3 w-3 mr-0.5"></i>地図を見る</a>` : ''}
+                ${c.address ? `<a href="${buildMapUrl(c.address)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:underline inline-flex items-center mt-0.5"><i data-lucide="map" class="h-3 w-3 mr-0.5"></i>地図を見る</a>` : ''}
               </div>
             </div>
             <p class="flex items-start"><i data-lucide="clock" class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0"></i> <span>日時: ${escapeHtml(c.schedule) || '-'}</span></p>
@@ -1721,26 +1780,42 @@
       
       const lineUrl = 'https://line.me/R/oaMessage/@860avzup/?' + encodeURIComponent(text);
       
-      // クリップボードへのコピーは一応残しておく（PC用や失敗時の保険）
+      // 送信内容はクリップボードにもコピーしておく（PCでLINEが開けない場合などの保険）。
+      // LINEを開くとフォーカスが新しいタブに移りコピーが拒否されるため、開く前に行う。
+      copyTextToClipboard(text);
+
+      // LINEはクリック処理の中で「すぐに」開く。
+      // setTimeout等で遅らせるとユーザー操作と見なされず、iOS Safari等でポップアップとしてブロックされる。
+      // noopener を window.open の引数に渡すと戻り値が常に null になり失敗を検知できないため、開いた後に opener を切る。
+      const lineWindow = window.open(lineUrl, '_blank');
+      if (lineWindow) {
+        lineWindow.opener = null;
+      } else {
+        // ブロックされた場合は同じタブで開く（スマホではLINEアプリが起動する）
+        window.location.href = lineUrl;
+      }
+
+      const msg = document.getElementById('copy-message');
+      msg.classList.remove('hidden');
+      setTimeout(() => msg.classList.add('hidden'), 3000);
+    };
+
+    function copyTextToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).catch(e => console.error('Clipboard copy failed', e));
+        return;
+      }
       try {
-        const textArea = document.createElement("textarea");
+        const textArea = document.createElement('textarea');
         textArea.value = text;
         document.body.appendChild(textArea);
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
       } catch (e) {
-        console.error("Clipboard copy failed", e);
+        console.error('Clipboard copy failed', e);
       }
-      
-      const msg = document.getElementById('copy-message');
-      msg.classList.remove('hidden');
-      
-      setTimeout(() => {
-        msg.classList.add('hidden');
-        window.open(lineUrl, '_blank');
-      }, 500);
-    };
+    }
 
     function getClassesHTML() {
       return `
@@ -1836,7 +1911,7 @@
             </div>
             
             <div id="copy-message" class="hidden mt-3 p-3 bg-green-50 border border-green-200 text-green-700 text-sm text-center rounded-lg font-bold flex items-center justify-center animate-fade-in">
-              <i data-lucide="loader-2" class="h-4 w-4 mr-2 animate-spin"></i> LINEを起動しています...
+              <i data-lucide="check-circle-2" class="h-4 w-4 mr-2 flex-shrink-0"></i> LINEを開きました（入力内容はコピーもしています）
             </div>
           </div>
         </div>
@@ -1943,39 +2018,53 @@
       `;
     }
 
+    // --- 教室情報の読み込み ---
+    // 読み込み完了（成功・失敗）時に、教室一覧が表示中であれば一覧部分だけを描き直す。
+    // （画面全体を描き直すと、検索欄の入力中のフォーカスが外れてしまうため）
+    function setKidsClassesStatus(status) {
+      kidsClassesStatus = status;
+      const listContainer = document.getElementById('classes-list-container');
+      if (listContainer) {
+        listContainer.innerHTML = generateClassesListHTML();
+        renderLucideIcons();
+      }
+    }
+
+    window.loadKidsClasses = function() {
+      setKidsClassesStatus('loading');
+      // cdnjs.cloudflare.com からの PapaParse 本体の読み込みに失敗すると `Papa` 自体が未定義になるため、
+      // typeof チェックと try/catch で、教室一覧以外の画面には影響させない。
+      if (typeof Papa === 'undefined') {
+        console.error('PapaParseライブラリが読み込めませんでした（CDN障害等の可能性）。');
+        setKidsClassesStatus('error');
+        return;
+      }
+      try {
+        Papa.parse(SPREADSHEET_CSV_URL, {
+          download: true,
+          header: true,
+          complete: function(results) {
+            // 空の行（nameが空）を除外してデータをセット
+            kidsClasses = results.data.filter(row => row.name && row.name.trim() !== '');
+            setKidsClassesStatus('loaded');
+          },
+          error: function(err) {
+            console.error('CSV読み込みエラー:', err);
+            setKidsClassesStatus('error');
+          }
+        });
+      } catch (e) {
+        console.error('PapaParseの実行中にエラーが発生しました:', e);
+        setKidsClassesStatus('error');
+      }
+    };
+
     // --- 初期化 ---
     window.addEventListener('DOMContentLoaded', () => {
-      // スプレッドシートURLが設定されている場合はCSVデータを取得。
-      // ただし cdnjs.cloudflare.com からの PapaParse 本体の読み込みに失敗すると
-      // `Papa` 自体が未定義となり、Papa.parse(...) の呼び出し自体が例外を投げて
-      // renderApp() が一度も呼ばれず画面が真っ白になる問題があったため、
-      // typeof チェックと try/catch で必ず renderApp() に到達するようにする。
-      if (SPREADSHEET_CSV_URL && typeof Papa !== 'undefined') {
-        try {
-          Papa.parse(SPREADSHEET_CSV_URL, {
-            download: true,
-            header: true,
-            complete: function(results) {
-              // 空の行（nameが空）を除外してデータをセット
-              kidsClasses = results.data.filter(row => row.name && row.name.trim() !== '');
-              renderApp();
-            },
-            error: function(err) {
-              console.error("CSV読み込みエラー:", err);
-              // 失敗時は内蔵のサンプルデータをそのまま使用して描画
-              renderApp();
-            }
-          });
-        } catch (e) {
-          console.error("PapaParseの実行中にエラーが発生しました。内蔵の教室サンプルデータで表示します:", e);
-          renderApp();
-        }
-      } else {
-        if (SPREADSHEET_CSV_URL) {
-          console.error("PapaParseライブラリが読み込めませんでした（CDN障害等の可能性）。内蔵の教室サンプルデータで表示します。");
-        }
-        renderApp();
-      }
+      // 画面はすぐに描画し、教室情報はバックグラウンドで読み込む
+      // （以前はCSVの読み込み完了まで画面全体が表示されなかった）
+      renderApp();
+      loadKidsClasses();
     });
 
   </script>

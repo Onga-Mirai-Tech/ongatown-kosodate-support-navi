@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!--
+  リンクを貼り付けたときに表示されるカード画像（OGP画像 / ogp.png）の元デザイン。
+  1200x630px で作る。変更したら scripts/ogp/generate.sh で ogp.png を作り直す。
+  アイコン: Lucide "baby"（ISC License）
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 45%, #ea580c 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #7c2d12;
+  }
+  .card {
+    width: 1104px; height: 534px;
+    background: #fffaf5;
+    border-radius: 40px;
+    box-shadow: 0 20px 50px rgba(124, 45, 18, 0.25);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative;
+    padding-bottom: 60px;
+  }
+  .icon {
+    width: 112px; height: 112px; border-radius: 50%;
+    background: #ffedd5; color: #ea580c;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 22px;
+  }
+  .icon svg { width: 68px; height: 68px; }
+  .town { font-size: 40px; font-weight: 700; color: #c2410c; letter-spacing: 0.08em; }
+  h1 { font-size: 92px; font-weight: 800; color: #7c2d12; letter-spacing: 0.04em; line-height: 1.2; margin-top: 4px; }
+  .tags { display: flex; gap: 16px; margin-top: 30px; }
+  .tag {
+    font-size: 28px; font-weight: 700; color: #9a3412;
+    background: #ffedd5; border: 2px solid #fed7aa;
+    padding: 8px 24px; border-radius: 999px;
+  }
+  .note {
+    position: absolute; bottom: 26px;
+    font-size: 22px; font-weight: 600; color: #9a3412; opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5" />
+        <path d="M15 12h.01" />
+        <path d="M19.38 6.813A9 9 0 0 1 20.8 10.2a2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1" />
+        <path d="M9 12h.01" />
+      </svg>
+    </div>
+    <p class="town">福岡県遠賀町</p>
+    <h1>子育て支援ナビ</h1>
+    <div class="tags">
+      <span class="tag">保育園・学校</span>
+      <span class="tag">給付認定の目安</span>
+      <span class="tag">手続きの流れ</span>
+      <span class="tag">子ども向け教室</span>
+    </div>
+    <p class="note">※個人開発の非公式アプリです（遠賀町役場の公式サービスではありません）</p>
+  </div>
+</body>
+</html>
