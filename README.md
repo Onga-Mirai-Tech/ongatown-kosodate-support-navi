@@ -52,6 +52,8 @@ bash scripts/build.sh      # 公開用ファイルを dist/ に作成
 index.html                 アプリ本体（画面の HTML / JavaScript）
 data/facilities.js         施設・学校・学童の一覧データ（出典・確認日つき）
 js/enrollment.js           学年・認定・日付の計算
+js/search.js               教室検索のキーワード照合
+favicon.svg                サイトのアイコン（scripts/icons/ で PNG・ICO を作成）
 src/tailwind.css           CSS（Tailwind）の元ファイル
 tests/                     自動テスト（npm test）
 server/                    本番サーバー（Xserver）専用の .htaccess と 404 ページ

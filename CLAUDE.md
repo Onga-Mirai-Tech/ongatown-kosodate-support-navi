@@ -19,7 +19,11 @@
   - URL: 開いている画面を `#タブ/サブタブ`（例 `#flow/school`）で表す。タブを増やしたら `TAB_TITLES`、タブ内の切り替えを増やしたら `SUB_TABS` と `getSubTab`/`setSubTab` に追加する。
   - ピンチ拡大は禁止しない（`user-scalable=no` を戻さない）。iPhone の入力欄タップ時の自動拡大は、スマホ幅で入力欄を16pxにして防いでいる。
   - 学年・認定・日付の計算は `js/enrollment.js`（`getFiscalYearOf()`：4/2〜翌4/1 を1学年、`getEnrollmentTimeline()` など）。境界日（4/1・4/2 生まれ、2/29 生まれ、3歳の誕生日当日）を変えるときは `tests/enrollment.test.js` にテストを追加する。
-  - スクリプトの読み込み順: `data/facilities.js` → `js/enrollment.js` → index.html 内のアプリ本体（トップレベルの const / function を共有する通常の script。ES modules ではない）。
+  - 教室検索のキーワード照合は `js/search.js`（全角半角・カタカナひらがなの違いを吸収、スペース区切りでAND）。
+  - 外部ライブラリ（lucide / PapaParse）は `integrity`（SRI）付きで読み込む。バージョンを上げるときは integrity も作り直す（index.html のコメント参照）。
+  - サイトのアイコンは `favicon.svg` が元。`bash scripts/icons/generate.sh` で `favicon.ico` / `apple-touch-icon.png` を作り直す。
+  - LINE の色は公式色 #06C755 を使う（ユーザーの判断）。免責事項ポップアップは毎回表示のまま残す。
+  - スクリプトの読み込み順: `data/facilities.js` → `js/enrollment.js` → `js/search.js` → index.html 内のアプリ本体（トップレベルの const / function を共有する通常の script。ES modules ではない）。
   - ヘッダーの「最終更新」日時は `scripts/build.sh` がデプロイ時に自動で書き込む（`index.html` が最後に main に反映された日時、日本時間）。ソース中の `<!--LAST_UPDATED-->…<!--/LAST_UPDATED-->` は手で書き換えない。
   - リンク共有時のカード（OGP）: `<head>` の `og:*` メタタグと `ogp.png`（1200x630）。画像は `scripts/ogp/ogp.html` を編集し `bash scripts/ogp/generate.sh`（Google Chrome が必要）で作り直す。
 - `server/` — 本番（Xserver / Apache）専用の `.htaccess`（HTTPS・正規ホスト統一・CSP 等）と `404.html`。

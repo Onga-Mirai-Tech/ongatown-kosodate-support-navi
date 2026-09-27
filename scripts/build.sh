@@ -11,6 +11,9 @@ cd "$(dirname "$0")/.."
 PUBLIC_FILES=(
   index.html
   ogp.png
+  favicon.svg
+  favicon.ico
+  apple-touch-icon.png
   js
   data
   assets
