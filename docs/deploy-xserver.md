@@ -10,8 +10,10 @@ GitHub Pages から Xserver + 独自ドメインへ移行するための手順�
 ```
 main へ push
    └─ GitHub Actions（.github/workflows/deploy.yml）
-        ├─ scripts/build.sh … 公開ファイルだけを dist/ に集める
-        └─ rsync over SSH  … dist/ を Xserver のドキュメントルートへ同期
+        ├─ build        … テストとビルドの確認
+        ├─ deploy       … scripts/build.sh で dist/ を作り、rsync over SSH で Xserver に同期
+        │                 （手順は .github/actions/deploy-xserver/action.yml）
+        └─ deploy-retry … deploy が失敗したときだけ、別の実行環境（別の IP）でやり直す
 ```
 
 - サーバーに置かれるのは `dist/` の中身だけです（`index.html` / `.htaccess` / `404.html`）。`.git` や `docs/`、`CLAUDE.md` などは公開されません。
@@ -134,6 +136,6 @@ main へ push
 | `Host key verification failed` | `XSERVER_KNOWN_HOSTS` が `ssh-keyscan -p 10022` の出力と一致しているか |
 | `Permission denied (publickey)` | 公開鍵がサーバーに登録されているか、`XSERVER_SSH_KEY` に秘密鍵全体（BEGIN/END 行を含む）が入っているか |
 | `Connection closed by <IP> port 10022`（認証前に切断される） | SSH設定の「国外IPアクセス制限」が ON のままになっていないか。手元からは接続できても GitHub Actions からは拒否される |
-| SSH 接続がタイムアウトする | サーバーパネルの SSH 設定が ON か |
+| SSH 接続がタイムアウトする（`Connection timed out`） | GitHub Actions の実行環境の IP によっては Xserver に接続できないことがある。deploy が失敗すると別の実行環境で deploy-retry が自動でやり直す。両方失敗した場合は Actions の画面で「Re-run failed jobs」を押す。何度やっても失敗する場合は、サーバーパネルの SSH 設定が ON か、国外IPアクセス制限が OFF かを確認 |
 | `XSERVER_DEPLOY_PATH は public_html 配下の…` | 誤ってメインドメインの `public_html` 直下を指定していないか（`--delete` で他サイトを消さないための安全装置です） |
 | 画面が崩れる・アイコンが出ない | コンソールの CSP 違反を確認し、`server/.htaccess` の CSP に読み込み元を追加 |
